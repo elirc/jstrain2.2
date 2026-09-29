@@ -1,0 +1,6 @@
+{
+  "name": "bootcamp",
+  "private": true,
+  "type": "module",
+  "description": "Zero-dependency JS bootcamp. Every exercise file runs directly with `node <file>`."
+}

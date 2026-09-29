@@ -1,0 +1,3 @@
+import { configSchema } from '../../../packages/contracts/src/index.js'; import { openDb,migrate,seed } from './db.js'; import { createApp } from './app.js';
+const config=configSchema.parse(process.env);const db=openDb(config.DATABASE_PATH);migrate(db);seed(db);const server=createApp(db).listen(config.PORT,()=>console.log(JSON.stringify({level:'info',event:'api.started',port:config.PORT})));
+let closing=false;const shutdown=(signal:string)=>{if(closing)return;closing=true;console.log(JSON.stringify({level:'info',event:'api.shutdown',signal}));server.close(()=>{db.close();process.exit(0)});setTimeout(()=>process.exit(1),10_000).unref();};process.on('SIGINT',()=>shutdown('SIGINT'));process.on('SIGTERM',()=>shutdown('SIGTERM'));

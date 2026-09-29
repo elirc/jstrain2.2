@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>16 · storage-theme — SOLUTION</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+h2 { font-size: 17px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #3b82f6;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.prompt ul, .prompt ol { margin: 8px 0 8px 20px; padding: 0; }
+.prompt li { margin: 3px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+#app > :first-child { margin-top: 0; }
+button { font: inherit; padding: 5px 11px; border: 1px solid #c8ccd3; background: #fff;
+  border-radius: 6px; cursor: pointer; }
+button:hover { border-color: #9aa1ab; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input, select, textarea { font: inherit; padding: 5px 8px; border: 1px solid #c8ccd3;
+  border-radius: 6px; }
+ul, ol { padding-left: 20px; }
+li { margin: 2px 0; }
+table { border-collapse: collapse; margin: 4px 0; }
+th, td { border: 1px solid #dfe3e8; padding: 4px 10px; text-align: left; }
+.error { color: #b91c1c; font-size: 13px; margin: 2px 0 8px; min-height: 1em; }
+.muted { color: #8b93a1; }
+.active { background: #1f2937; color: #fff; border-color: #1f2937; }
+/* ── checks panel ─────────────────────────────────────────────── */
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .summary.todo { color: #b45309; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+body.dark { background: #12151a; color: #e7eaee; }
+body.dark #app, body.dark #checks, body.dark .prompt { background: #1b1f26;
+  border-color: #2b313a; color: #e7eaee; }
+body.dark code { background: #2b313a; color: #e7eaee; }
+body.dark button { background: #262c35; color: #e7eaee; border-color: #39404b; }
+</style>
+</head>
+<body>
+<main>
+  <h1>16 · Remember it after a reload — SOLUTION <small>★★☆ core</small></h1>
+  <p class="meta">concepts: localStorage · try/catch · persistence · solutions/16-storage-theme.html</p>
+  <section class="prompt">
+    <p>Two things that must survive a refresh, both stored in
+    <code>localStorage</code>.</p>
+    <ul>
+      <li><strong>Visits</strong> — key <code>dom.visits</code>. <code>setup()</code>
+          reads it and shows it in <code>#visits</code>; <code>#bump</code> adds one
+          and saves. Missing or corrupt value → start at <code>0</code>.</li>
+      <li><strong>Theme</strong> — key <code>dom.theme</code>, either
+          <code>'dark'</code> or <code>'light'</code>. <code>setup()</code> applies
+          it: the class <code>dark</code> on <code>&lt;body&gt;</code> and the name in
+          <code>#theme-name</code>. <code>#theme-toggle</code> flips it and saves.</li>
+    </ul>
+    <p><strong>Wrap every single storage call in try/catch.</strong> Private windows,
+    "block third-party cookies", a full quota — any of them make
+    <code>localStorage</code> throw, and a counter is not worth a broken page.</p>
+    <p class="hint">hint: everything comes back as a string or
+    <code>null</code>. <code>Number(null)</code> is <code>0</code> but
+    <code>Number('banana')</code> is <code>NaN</code>, so check with
+    <code>Number.isFinite</code> before trusting it.</p>
+  </section>
+  <div id="app">
+    <p>Visits: <b id="visits">0</b></p>
+    <p><button id="bump">Count a visit</button></p>
+    <hr>
+    <p>Theme: <b id="theme-name">light</b></p>
+    <p><button id="theme-toggle">Toggle theme</button></p>
+  </div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Reload to re-run: edit this file in your editor, save, then press F5 here. Keep the console open (F12) — uncaught errors show up there.</p>
+</aside>
+<script>
+// ─── YOUR CODE ───────────────────────────────
+/* Walkthrough
+   `read`/`write` wrappers mean the try/catch is written twice, not eight times, and
+   the rest of the code reads as if storage always works. That is the whole trick to
+   defensive code: push the ugliness to the edge.
+
+   `Number(read(key))` on a missing key gives `Number(null)` → 0, which happens to be
+   right. On the string 'banana' it gives NaN, which would render "NaN" forever —
+   hence `Number.isFinite`. Storage is user-editable text; treat it like input from a
+   stranger.
+
+   `String(visits)` on the way in is not required (storage stringifies anyway) but it
+   keeps the types honest — and for objects you must `JSON.stringify` yourself.
+
+   `classList.toggle('dark', theme === 'dark')` applies the theme with no
+   `if`/`else`, and `paint()` runs at the end of setup so a saved dark theme is on
+   screen before the user touches anything.
+*/
+const VISITS_KEY = 'dom.visits';
+const THEME_KEY = 'dom.theme';
+
+function read(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (err) {
+    return null;                       // storage blocked: carry on without it
+  }
+}
+
+function write(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (err) {
+    /* full, blocked, or private mode — the page still works */
+  }
+}
+
+function setup() {
+  const visitsOut = document.getElementById('visits');
+  const themeOut = document.getElementById('theme-name');
+
+  const stored = Number(read(VISITS_KEY));
+  let visits = Number.isFinite(stored) ? stored : 0;
+  let theme = read(THEME_KEY) === 'dark' ? 'dark' : 'light';
+
+  function paint() {
+    visitsOut.textContent = visits;
+    themeOut.textContent = theme;
+    document.body.classList.toggle('dark', theme === 'dark');
+  }
+
+  document.getElementById('bump').addEventListener('click', () => {
+    visits += 1;
+    write(VISITS_KEY, String(visits));
+    paint();
+  });
+
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    theme = theme === 'dark' ? 'light' : 'dark';
+    write(THEME_KEY, theme);
+    paint();
+  });
+
+  paint();
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+var __app = document.getElementById('app');
+var __appHTML = __app ? __app.innerHTML : '';
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function reset() { if (__app) __app.innerHTML = __appHTML; }
+function wait(ms) { return new Promise(function (done) { setTimeout(done, ms); }); }
+function ok(value, msg) {
+  if (!value) throw new Error(msg || 'expected a truthy value, got ' + JSON.stringify(value));
+}
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+function fire(el, type, init) {
+  var opts = Object.assign({ bubbles: true, cancelable: true }, init || {});
+  var ev;
+  if (type.indexOf('key') === 0) ev = new KeyboardEvent(type, opts);
+  else if (type === 'input' || type === 'beforeinput') ev = new InputEvent(type, opts);
+  else if (/^(click|dbl|mouse|pointer|contextmenu)/.test(type)) ev = new MouseEvent(type, opts);
+  else ev = new Event(type, opts);
+  el.dispatchEvent(ev);
+  return ev;
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      reset();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '\u2714 ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '\u2610 ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '\u2718 ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed \u00b7 ' + failed + ' failed \u00b7 ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { reset(); if (window.__DEMO) window.__DEMO(); } catch (err) { /* still TODO */ }
+}
+setTimeout(__run, 0);
+
+test('starts at 0 when storage is empty', () => {
+  localStorage.clear();
+  setup();
+  eq(document.getElementById('visits').textContent.trim(), '0');
+});
+
+test('the button counts up', () => {
+  localStorage.clear();
+  setup();
+  document.getElementById('bump').click();
+  document.getElementById('bump').click();
+  eq(document.getElementById('visits').textContent.trim(), '2');
+});
+
+test('saves the count to localStorage', () => {
+  localStorage.clear();
+  setup();
+  document.getElementById('bump').click();
+  document.getElementById('bump').click();
+  document.getElementById('bump').click();
+  eq(localStorage.getItem(VISITS_KEY), '3');
+});
+
+test('reads a saved count back on load', () => {
+  localStorage.clear();
+  localStorage.setItem(VISITS_KEY, '41');
+  setup();
+  eq(document.getElementById('visits').textContent.trim(), '41');
+  document.getElementById('bump').click();
+  eq(document.getElementById('visits').textContent.trim(), '42');
+});
+
+test('survives junk in storage', () => {
+  localStorage.clear();
+  localStorage.setItem(VISITS_KEY, 'banana');
+  setup();
+  eq(document.getElementById('visits').textContent.trim(), '0');
+});
+
+test('the toggle switches the theme on the body', () => {
+  localStorage.clear();
+  setup();
+  eq(document.body.classList.contains('dark'), false);
+  document.getElementById('theme-toggle').click();
+  ok(document.body.classList.contains('dark'), 'expected body.dark');
+  eq(document.getElementById('theme-name').textContent.trim(), 'dark');
+});
+
+test('the toggle switches back to light', () => {
+  localStorage.clear();
+  setup();
+  document.getElementById('theme-toggle').click();
+  document.getElementById('theme-toggle').click();
+  eq(document.body.classList.contains('dark'), false);
+  eq(document.getElementById('theme-name').textContent.trim(), 'light');
+});
+
+test('saves the theme', () => {
+  localStorage.clear();
+  setup();
+  document.getElementById('theme-toggle').click();
+  eq(localStorage.getItem(THEME_KEY), 'dark');
+});
+
+test('restores a saved dark theme on load', () => {
+  localStorage.clear();
+  localStorage.setItem(THEME_KEY, 'dark');
+  setup();
+  ok(document.body.classList.contains('dark'), 'expected the saved theme to be applied');
+  eq(document.getElementById('theme-name').textContent.trim(), 'dark');
+});
+
+test('keeps working when localStorage throws', () => {
+  localStorage.clear();
+  const original = Storage.prototype.setItem;
+  Storage.prototype.setItem = function () { throw new Error('QuotaExceededError'); };
+  try {
+    setup();
+    document.getElementById('bump').click();
+  } finally {
+    Storage.prototype.setItem = original;
+  }
+  eq(document.getElementById('visits').textContent.trim(), '1',
+    'the UI must still update when saving fails');
+});
+
+window.__DEMO = function () { setup(); };
+</script>
+</body>
+</html>

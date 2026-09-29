@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>09 · delegation-delete — SOLUTION</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+h2 { font-size: 17px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #3b82f6;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.prompt ul, .prompt ol { margin: 8px 0 8px 20px; padding: 0; }
+.prompt li { margin: 3px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+#app > :first-child { margin-top: 0; }
+button { font: inherit; padding: 5px 11px; border: 1px solid #c8ccd3; background: #fff;
+  border-radius: 6px; cursor: pointer; }
+button:hover { border-color: #9aa1ab; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input, select, textarea { font: inherit; padding: 5px 8px; border: 1px solid #c8ccd3;
+  border-radius: 6px; }
+ul, ol { padding-left: 20px; }
+li { margin: 2px 0; }
+table { border-collapse: collapse; margin: 4px 0; }
+th, td { border: 1px solid #dfe3e8; padding: 4px 10px; text-align: left; }
+.error { color: #b91c1c; font-size: 13px; margin: 2px 0 8px; min-height: 1em; }
+.muted { color: #8b93a1; }
+.active { background: #1f2937; color: #fff; border-color: #1f2937; }
+/* ── checks panel ─────────────────────────────────────────────── */
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .summary.todo { color: #b45309; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+</style>
+</head>
+<body>
+<main>
+  <h1>09 · Event delegation, part 1 — SOLUTION <small>★★☆ core</small></h1>
+  <p class="meta">concepts: event delegation · closest · bubbling · solutions/09-delegation-delete.html</p>
+  <section class="prompt">
+    <p><strong>Event delegation</strong> is the pattern: instead of a listener on
+    every child, put <em>one</em> listener on the parent and work out what was
+    clicked from <code>event.target</code>. Events bubble up, so the parent hears
+    them all — including clicks on children that did not exist when you attached it.</p>
+    <p><code>setup()</code> must attach <strong>exactly one</strong> click listener,
+    on <code>#shopping</code>:</p>
+    <ul>
+      <li>a click on a <code>.del</code> button removes that button's
+          <code>&lt;li&gt;</code></li>
+      <li>a click anywhere else in the list does nothing</li>
+      <li><code>#left</code> always reads <code>3 items</code> — and
+          <code>1 item</code>, singular, when only one is left</li>
+      <li><code>#add-item</code> appends a new row with the same shape: a
+          <code>.label</code> span reading <code>Item N</code> (N = the new length)
+          and a <code>.del</code> button</li>
+    </ul>
+    <p class="hint">hint: <code>event.target</code> is the deepest element clicked.
+    <code>event.target.closest('.del')</code> walks up from it and returns
+    <code>null</code> if there is no match — that null check <em>is</em> your filter.
+    <code>button.closest('li')</code> then finds the row to remove.</p>
+  </section>
+  <div id="app">
+    <ul id="shopping">
+      <li data-id="1"><span class="label">Milk</span> <button class="del">✕</button></li>
+      <li data-id="2"><span class="label">Bread</span> <button class="del">✕</button></li>
+      <li data-id="3"><span class="label">Coffee</span> <button class="del">✕</button></li>
+    </ul>
+    <p><button id="add-item">Add item</button></p>
+    <p id="left">3 items</p>
+  </div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Reload to re-run: edit this file in your editor, save, then press F5 here. Keep the console open (F12) — uncaught errors show up there.</p>
+</aside>
+<script>
+// ─── YOUR CODE ───────────────────────────────
+/* Walkthrough
+   One listener, forever. Rows added later work automatically because the listener
+   is on the parent and the click bubbles up to it — no rewiring after a render,
+   and no slow accumulation of hundreds of listeners.
+
+   `event.target.closest('.del')` does two jobs: it filters out clicks that missed
+   a delete button (returns null) and it hands you the button even when the click
+   landed on an icon *inside* it. `list.contains(button)` guards the rare case of
+   markup outside the list matching the same selector.
+
+   `paintCount()` is called after every mutation and derives the number from the
+   DOM, so it cannot drift out of sync.
+
+   The wrong turn: `document.querySelectorAll('.del').forEach(b => b.addEventListener(...))`.
+   It works — until the add button creates a row with no listener on it.
+*/
+function setup() {
+  const list = document.getElementById('shopping');
+  const left = document.getElementById('left');
+
+  function paintCount() {
+    const count = list.querySelectorAll('li').length;
+    left.textContent = count + (count === 1 ? ' item' : ' items');
+  }
+
+  list.addEventListener('click', (event) => {
+    const button = event.target.closest('.del');
+    if (!button || !list.contains(button)) return;
+
+    button.closest('li').remove();
+    paintCount();
+  });
+
+  document.getElementById('add-item').addEventListener('click', () => {
+    const li = document.createElement('li');
+    const label = document.createElement('span');
+    label.className = 'label';
+    label.textContent = 'Item ' + (list.children.length + 1);
+
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.textContent = '✕';
+
+    li.append(label, ' ', del);
+    list.append(li);
+    paintCount();
+  });
+
+  paintCount();
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+var __app = document.getElementById('app');
+var __appHTML = __app ? __app.innerHTML : '';
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function reset() { if (__app) __app.innerHTML = __appHTML; }
+function wait(ms) { return new Promise(function (done) { setTimeout(done, ms); }); }
+function ok(value, msg) {
+  if (!value) throw new Error(msg || 'expected a truthy value, got ' + JSON.stringify(value));
+}
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+function fire(el, type, init) {
+  var opts = Object.assign({ bubbles: true, cancelable: true }, init || {});
+  var ev;
+  if (type.indexOf('key') === 0) ev = new KeyboardEvent(type, opts);
+  else if (type === 'input' || type === 'beforeinput') ev = new InputEvent(type, opts);
+  else if (/^(click|dbl|mouse|pointer|contextmenu)/.test(type)) ev = new MouseEvent(type, opts);
+  else ev = new Event(type, opts);
+  el.dispatchEvent(ev);
+  return ev;
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      reset();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '\u2714 ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '\u2610 ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '\u2718 ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed \u00b7 ' + failed + ' failed \u00b7 ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { reset(); if (window.__DEMO) window.__DEMO(); } catch (err) { /* still TODO */ }
+}
+setTimeout(__run, 0);
+
+test('starts with three rows and a matching count', () => {
+  setup();
+  eq(document.querySelectorAll('#shopping li').length, 3);
+  eq(document.getElementById('left').textContent.trim(), '3 items');
+});
+
+test('a delete button removes just its own row', () => {
+  setup();
+  document.querySelectorAll('#shopping .del')[1].click();
+  const labels = Array.from(document.querySelectorAll('#shopping .label'))
+    .map((el) => el.textContent);
+  eq(labels, ['Milk', 'Coffee']);
+});
+
+test('the count line follows the list', () => {
+  setup();
+  document.querySelector('#shopping .del').click();
+  eq(document.getElementById('left').textContent.trim(), '2 items');
+});
+
+test('clicking the row text deletes nothing', () => {
+  setup();
+  document.querySelector('#shopping .label').click();
+  eq(document.querySelectorAll('#shopping li').length, 3);
+});
+
+test('says "1 item" in the singular', () => {
+  setup();
+  document.querySelector('#shopping .del').click();
+  document.querySelector('#shopping .del').click();
+  eq(document.getElementById('left').textContent.trim(), '1 item');
+});
+
+test('deleting everything leaves an empty list and "0 items"', () => {
+  setup();
+  while (document.querySelector('#shopping .del')) {
+    document.querySelector('#shopping .del').click();
+  }
+  eq(document.querySelectorAll('#shopping li').length, 0);
+  eq(document.getElementById('left').textContent.trim(), '0 items');
+});
+
+test('the add button appends a row', () => {
+  setup();
+  document.getElementById('add-item').click();
+  const labels = Array.from(document.querySelectorAll('#shopping .label'))
+    .map((el) => el.textContent);
+  eq(labels, ['Milk', 'Bread', 'Coffee', 'Item 4']);
+  eq(document.getElementById('left').textContent.trim(), '4 items');
+});
+
+test('delete still works on a row added after setup ran', () => {
+  setup();
+  document.getElementById('add-item').click();
+  const dels = document.querySelectorAll('#shopping .del');
+  dels[dels.length - 1].click();
+  eq(document.querySelectorAll('#shopping li').length, 3);
+  eq(document.getElementById('left').textContent.trim(), '3 items');
+});
+
+test('attaches one listener on the <ul>, none on the rows', () => {
+  const proto = EventTarget.prototype;
+  const original = proto.addEventListener;
+  const targets = [];
+  proto.addEventListener = function () {
+    targets.push(this);
+    return original.apply(this, arguments);
+  };
+  try {
+    setup();
+  } finally {
+    proto.addEventListener = original;
+  }
+  const list = document.getElementById('shopping');
+  const inside = targets.filter((t) => t && t.nodeType === 1 && t !== list && list.contains(t));
+  eq(inside.length, 0, 'found listeners attached inside the list');
+  ok(targets.indexOf(list) !== -1, 'expected one listener on #shopping itself');
+});
+
+window.__DEMO = function () { setup(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+import { defineConfig } from 'vite';import react from '@vitejs/plugin-react';import path from 'node:path';export default defineConfig({root:path.resolve('apps/web'),plugins:[react()],server:{port:5303,proxy:{'/api':'http://localhost:4303','/health':'http://localhost:4303'}},build:{outDir:path.resolve('dist/web'),emptyOutDir:true}});

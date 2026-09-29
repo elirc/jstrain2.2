@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>21 · toasts — SOLUTION</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+h2 { font-size: 17px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #3b82f6;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.prompt ul, .prompt ol { margin: 8px 0 8px 20px; padding: 0; }
+.prompt li { margin: 3px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+#app > :first-child { margin-top: 0; }
+button { font: inherit; padding: 5px 11px; border: 1px solid #c8ccd3; background: #fff;
+  border-radius: 6px; cursor: pointer; }
+button:hover { border-color: #9aa1ab; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input, select, textarea { font: inherit; padding: 5px 8px; border: 1px solid #c8ccd3;
+  border-radius: 6px; }
+ul, ol { padding-left: 20px; }
+li { margin: 2px 0; }
+table { border-collapse: collapse; margin: 4px 0; }
+th, td { border: 1px solid #dfe3e8; padding: 4px 10px; text-align: left; }
+.error { color: #b91c1c; font-size: 13px; margin: 2px 0 8px; min-height: 1em; }
+.muted { color: #8b93a1; }
+.active { background: #1f2937; color: #fff; border-color: #1f2937; }
+/* ── checks panel ─────────────────────────────────────────────── */
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .summary.todo { color: #b45309; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+.toasts { list-style: none; padding: 0; margin: 14px 0 0; max-width: 340px; }
+.toast { display: flex; align-items: center; gap: 8px; background: #fff; margin: 6px 0;
+  border: 1px solid #e3e6ea; border-left: 4px solid #6b7280; border-radius: 6px;
+  padding: 6px 10px; }
+.toast.info { border-left-color: #2563eb; }
+.toast.error { border-left-color: #b91c1c; }
+.toast .toast-text { flex: 1 1 auto; }
+.toast .dismiss { border: 0; background: none; color: #6b7280; padding: 0 4px; font-size: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>21 · Toasts that dismiss themselves — SOLUTION <small>★★☆ extra</small></h1>
+  <p class="meta">concepts: setTimeout · one timer per item · delegation · solutions/21-toasts.html</p>
+  <section class="prompt">
+    <p>Notifications that appear, stack up, and take themselves away again.</p>
+    <ul>
+      <li>each button shows a toast carrying its own <code>data-message</code></li>
+      <li>a toast is
+          <code>&lt;li class="toast KIND"&gt;&lt;span class="toast-text"&gt;…&lt;/span&gt;&lt;button class="dismiss"&gt;×&lt;/button&gt;&lt;/li&gt;</code>
+          — kind is <code>info</code> or <code>error</code></li>
+      <li>the newest toast goes on <strong>top</strong> of <code>#toasts</code></li>
+      <li>every toast removes itself <code>TOAST_MS</code> after it appeared</li>
+      <li>the <code>×</code> button removes one immediately, and cancels its timer</li>
+    </ul>
+    <p class="hint">hint: <em>one timer per toast</em>. A single
+    <code>let timer</code> in the outer scope is overwritten by the second toast,
+    so the first one never leaves and <code>clearTimeout</code> can no longer
+    reach it. Keep the ids in a <code>Map</code> keyed by the element, and use one
+    delegated listener on the list — the toasts do not exist yet when you wire it
+    up.</p>
+  </section>
+  <div id="app">
+    <p>
+      <button id="toast-info" data-message="Saved">Info toast</button>
+      <button id="toast-error" data-message="Upload failed">Error toast</button>
+    </p>
+    <ul id="toasts" class="toasts" aria-live="polite"></ul>
+  </div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Reload to re-run: edit this file in your editor, save, then press F5 here. Keep the console open (F12) — uncaught errors show up there.</p>
+</aside>
+<script>
+// ─── YOUR CODE ───────────────────────────────
+/* Walkthrough
+   The pattern is a queue of self-expiring nodes: each toast owns a timer, and the
+   timer id is stored in a Map keyed by the element it will remove.
+
+   The classic wrong turn is a single `let timer` for the component. Show a second
+   toast and the id is overwritten — the first interval/timeout is now unreachable,
+   so its toast either never leaves or leaves at the wrong moment. Anything that can
+   exist more than once needs its own timer.
+
+   `prepend` is what makes newest-on-top a one-liner; `append` plus a CSS
+   `flex-direction: column-reverse` would look identical and read backwards in the
+   accessibility tree, which is the copy screen readers announce.
+
+   Dismiss is delegated on the list, not attached per toast, because the buttons are
+   created after the listener. And `clearTimeout` on early dismissal is not
+   cosmetic: without it the timer fires later against a node that is already gone.
+   Removing a detached node is harmless today, and a bug the moment the callback
+   does anything else.
+*/
+const TOAST_MS = 400;
+
+function setup() {
+  const list = document.getElementById('toasts');
+  const timers = new Map();
+
+  list.textContent = '';
+
+  function dismiss(toast) {
+    clearTimeout(timers.get(toast));      // the timer belongs to this toast alone
+    timers.delete(toast);
+    toast.remove();
+  }
+
+  function showToast(message, kind) {
+    const toast = document.createElement('li');
+    toast.className = 'toast ' + kind;
+
+    const text = document.createElement('span');
+    text.className = 'toast-text';
+    text.textContent = message;
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'dismiss';
+    close.setAttribute('aria-label', 'Dismiss');
+    close.textContent = '\u00d7';
+
+    toast.append(text, close);
+    list.prepend(toast);                  // newest on top
+
+    timers.set(toast, setTimeout(() => dismiss(toast), TOAST_MS));
+  }
+
+  list.addEventListener('click', (event) => {
+    const button = event.target.closest('.dismiss');
+    if (!button) return;
+    dismiss(button.closest('.toast'));
+  });
+
+  for (const id of ['toast-info', 'toast-error']) {
+    const button = document.getElementById(id);
+    button.addEventListener('click', () => {
+      showToast(button.dataset.message, id === 'toast-error' ? 'error' : 'info');
+    });
+  }
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+var __app = document.getElementById('app');
+var __appHTML = __app ? __app.innerHTML : '';
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function reset() { if (__app) __app.innerHTML = __appHTML; }
+function wait(ms) { return new Promise(function (done) { setTimeout(done, ms); }); }
+function ok(value, msg) {
+  if (!value) throw new Error(msg || 'expected a truthy value, got ' + JSON.stringify(value));
+}
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+function fire(el, type, init) {
+  var opts = Object.assign({ bubbles: true, cancelable: true }, init || {});
+  var ev;
+  if (type.indexOf('key') === 0) ev = new KeyboardEvent(type, opts);
+  else if (type === 'input' || type === 'beforeinput') ev = new InputEvent(type, opts);
+  else if (/^(click|dbl|mouse|pointer|contextmenu)/.test(type)) ev = new MouseEvent(type, opts);
+  else ev = new Event(type, opts);
+  el.dispatchEvent(ev);
+  return ev;
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      reset();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '\u2714 ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '\u2610 ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '\u2718 ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed \u00b7 ' + failed + ' failed \u00b7 ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { reset(); if (window.__DEMO) window.__DEMO(); } catch (err) { /* still TODO */ }
+}
+setTimeout(__run, 0);
+
+function toasts() {
+  return Array.from(document.querySelectorAll('#toasts .toast'));
+}
+
+function toastText(index) {
+  return toasts()[index].querySelector('.toast-text').textContent.trim();
+}
+
+test('starts with no toasts on screen', () => {
+  setup();
+  eq(toasts().length, 0);
+});
+
+test('a click shows a toast carrying the button message', () => {
+  setup();
+  document.getElementById('toast-info').click();
+  eq(toasts().length, 1);
+  eq(toastText(0), 'Saved');
+});
+
+test('the toast wears its kind as a class', () => {
+  setup();
+  document.getElementById('toast-error').click();
+  ok(toasts()[0].classList.contains('toast'), 'expected the class toast');
+  ok(toasts()[0].classList.contains('error'), 'expected the class error');
+});
+
+test('the newest toast is first in the list', () => {
+  setup();
+  document.getElementById('toast-info').click();
+  document.getElementById('toast-error').click();
+  eq(toasts().length, 2);
+  eq(toastText(0), 'Upload failed');
+  eq(toastText(1), 'Saved');
+});
+
+test('a toast removes itself after TOAST_MS', async () => {
+  setup();
+  document.getElementById('toast-info').click();
+  eq(toasts().length, 1);
+  await wait(TOAST_MS + 150);
+  eq(toasts().length, 0, 'the toast should have taken itself away');
+});
+
+test('every toast keeps its own timer', async () => {
+  setup();
+  document.getElementById('toast-info').click();
+  await wait(220);
+  document.getElementById('toast-error').click();
+  await wait(280);
+  eq(toasts().length, 1, 'the first should be gone and the second should not');
+  eq(toastText(0), 'Upload failed');
+  await wait(250);
+  eq(toasts().length, 0);
+});
+
+test('the dismiss button removes a toast right away', () => {
+  setup();
+  document.getElementById('toast-info').click();
+  toasts()[0].querySelector('.dismiss').click();
+  eq(toasts().length, 0);
+});
+
+test('dismissing one toast leaves the others alone', () => {
+  setup();
+  document.getElementById('toast-info').click();
+  document.getElementById('toast-error').click();
+  toasts()[0].querySelector('.dismiss').click();
+  eq(toasts().length, 1);
+  eq(toastText(0), 'Saved');
+});
+
+test('the stack empties once everything expires', async () => {
+  setup();
+  document.getElementById('toast-info').click();
+  document.getElementById('toast-error').click();
+  document.getElementById('toast-info').click();
+  eq(toasts().length, 3);
+  await wait(TOAST_MS + 150);
+  eq(toasts().length, 0);
+});
+
+window.__DEMO = function () { setup(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>32 · inline-edit — SOLUTION</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+h2 { font-size: 17px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #3b82f6;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.prompt ul, .prompt ol { margin: 8px 0 8px 20px; padding: 0; }
+.prompt li { margin: 3px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+#app > :first-child { margin-top: 0; }
+button { font: inherit; padding: 5px 11px; border: 1px solid #c8ccd3; background: #fff;
+  border-radius: 6px; cursor: pointer; }
+button:hover { border-color: #9aa1ab; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input, select, textarea { font: inherit; padding: 5px 8px; border: 1px solid #c8ccd3;
+  border-radius: 6px; }
+ul, ol { padding-left: 20px; }
+li { margin: 2px 0; }
+table { border-collapse: collapse; margin: 4px 0; }
+th, td { border: 1px solid #dfe3e8; padding: 4px 10px; text-align: left; }
+.error { color: #b91c1c; font-size: 13px; margin: 2px 0 8px; min-height: 1em; }
+.muted { color: #8b93a1; }
+.active { background: #1f2937; color: #fff; border-color: #1f2937; }
+/* ── checks panel ─────────────────────────────────────────────── */
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .summary.todo { color: #b45309; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+#notes { list-style: none; padding: 0; margin: 8px 0; max-width: 360px; }
+#notes .note { padding: 4px 0; border-bottom: 1px solid #f0f2f5; }
+#notes .note.editing { background: #f6f7f9; }
+#notes .label { cursor: text; }
+#notes .edit { width: 100%; }
+#notes-state { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>32 · Edit in place — SOLUTION <small>★★☆ extra</small></h1>
+  <p class="meta">concepts: dblclick · Enter commits · Escape cancels · solutions/32-inline-edit.html</p>
+  <section class="prompt">
+    <p>Double-click a note, it becomes an input. Enter keeps the change, Escape
+    throws it away.</p>
+    <ul>
+      <li>render <code>NOTES</code> as
+          <code>&lt;li class="note"&gt;&lt;span class="label"&gt;…&lt;/span&gt;&lt;/li&gt;</code></li>
+      <li><code>dblclick</code> on a label turns <em>that</em> row into
+          <code>&lt;input class="edit"&gt;</code> holding the current text, adds
+          the class <code>editing</code>, and focuses it. Only one row edits at a
+          time</li>
+      <li><kbd>Enter</kbd> writes the value back into the array and rerenders;
+          a blank value is treated as a cancel</li>
+      <li><kbd>Escape</kbd> puts the row back untouched</li>
+      <li><code>#notes-state</code> shows the notes joined with
+          <code>" | "</code> — proof that the data changed, not just the row</li>
+    </ul>
+    <p class="hint">hint: keep the row being edited as an index in state and let
+    <code>render()</code> decide span-or-input. The keydown listener is delegated
+    on the list, because the input does not exist yet when you attach it.</p>
+  </section>
+  <div id="app">
+    <ul id="notes"></ul>
+    <p id="notes-state" class="muted"></p>
+  </div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Reload to re-run: edit this file in your editor, save, then press F5 here. Keep the console open (F12) — uncaught errors show up there.</p>
+</aside>
+<script>
+// ─── YOUR CODE ───────────────────────────────
+/* Walkthrough
+   `editing` holds the index of the row being edited, or `null`. One render
+   function reads it and decides whether each row is a span or an input. There is
+   no "turn this label into an input" code anywhere, because there is no state that
+   only the DOM knows.
+
+   The wrong turn is doing it by hand: replace the span with an input, then on
+   Enter read the input, write to the array, and put a span back. It works, until
+   any other change rerenders the list while somebody is typing — their input
+   silently evaporates, because the render had no idea it existed.
+
+   Both listeners are delegated on the `ul`. The input is created after the
+   listeners are attached, so it can never be wired directly; `event.target.matches`
+   is how a delegated listener filters for it.
+
+   `focus()` at the end of render is the small courtesy that makes this usable —
+   without it the input appears and the keystroke goes nowhere. Committing on blur
+   as well is the other half most editors add; it needs care, because clicking a
+   Cancel button blurs the field first.
+*/
+const NOTES = ['Buy milk', 'Call Ana', 'Book flights'];
+
+function setup() {
+  const list = document.getElementById('notes');
+  const state = document.getElementById('notes-state');
+  const notes = NOTES.slice();
+  let editing = null;                      // the index being edited, or null
+
+  function render() {
+    list.textContent = '';
+    notes.forEach((text, index) => {
+      const row = document.createElement('li');
+      row.className = 'note';
+      row.dataset.index = index;
+
+      if (index === editing) {
+        row.classList.add('editing');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'edit';
+        input.value = text;
+        row.append(input);
+      } else {
+        const label = document.createElement('span');
+        label.className = 'label';
+        label.textContent = text;
+        row.append(label);
+      }
+      list.append(row);
+    });
+
+    state.textContent = notes.join(' | ');
+    const input = list.querySelector('.edit');
+    if (input) input.focus();
+  }
+
+  list.addEventListener('dblclick', (event) => {
+    const label = event.target.closest('.label');
+    if (!label) return;
+    editing = Number(label.closest('.note').dataset.index);
+    render();
+  });
+
+  list.addEventListener('keydown', (event) => {
+    if (!event.target.matches('.edit')) return;
+    if (event.key === 'Enter') {
+      const value = event.target.value.trim();
+      if (value !== '') notes[editing] = value;      // a blank commit is a cancel
+      editing = null;
+      render();
+    } else if (event.key === 'Escape') {
+      editing = null;                                 // drop the draft
+      render();
+    }
+  });
+
+  render();
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+var __app = document.getElementById('app');
+var __appHTML = __app ? __app.innerHTML : '';
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function reset() { if (__app) __app.innerHTML = __appHTML; }
+function wait(ms) { return new Promise(function (done) { setTimeout(done, ms); }); }
+function ok(value, msg) {
+  if (!value) throw new Error(msg || 'expected a truthy value, got ' + JSON.stringify(value));
+}
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+function fire(el, type, init) {
+  var opts = Object.assign({ bubbles: true, cancelable: true }, init || {});
+  var ev;
+  if (type.indexOf('key') === 0) ev = new KeyboardEvent(type, opts);
+  else if (type === 'input' || type === 'beforeinput') ev = new InputEvent(type, opts);
+  else if (/^(click|dbl|mouse|pointer|contextmenu)/.test(type)) ev = new MouseEvent(type, opts);
+  else ev = new Event(type, opts);
+  el.dispatchEvent(ev);
+  return ev;
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      reset();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '\u2714 ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '\u2610 ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '\u2718 ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed \u00b7 ' + failed + ' failed \u00b7 ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { reset(); if (window.__DEMO) window.__DEMO(); } catch (err) { /* still TODO */ }
+}
+setTimeout(__run, 0);
+
+function labels() {
+  return Array.from(document.querySelectorAll('#notes .note')).map((li) => {
+    const label = li.querySelector('.label');
+    return label ? label.textContent.trim() : null;
+  });
+}
+
+function noteAt(index) {
+  return document.querySelectorAll('#notes .note')[index];
+}
+
+function startEditing(index) {
+  fire(noteAt(index).querySelector('.label'), 'dblclick');
+  return document.querySelector('#notes .edit');
+}
+
+function commit(input, value) {
+  input.value = value;
+  fire(input, 'keydown', { key: 'Enter' });
+}
+
+test('renders every note as plain text', () => {
+  setup();
+  eq(labels(), ['Buy milk', 'Call Ana', 'Book flights']);
+  eq(document.querySelectorAll('#notes .edit').length, 0);
+  eq(document.getElementById('notes-state').textContent.trim(),
+    'Buy milk | Call Ana | Book flights');
+});
+
+test('a double click opens an input on that row', () => {
+  setup();
+  const input = startEditing(1);
+  ok(input, 'expected an input with the class edit');
+  eq(input.value, 'Call Ana');
+  ok(noteAt(1).classList.contains('editing'), 'expected the row to be marked editing');
+});
+
+test('the input takes focus', () => {
+  setup();
+  const input = startEditing(0);
+  eq(document.activeElement === input, true);
+});
+
+test('a single click does not start editing', () => {
+  setup();
+  noteAt(0).querySelector('.label').click();
+  eq(document.querySelectorAll('#notes .edit').length, 0);
+});
+
+test('only one row edits at a time', () => {
+  setup();
+  startEditing(0);
+  startEditing(1);
+  eq(document.querySelectorAll('#notes .edit').length, 1);
+  ok(noteAt(1).classList.contains('editing'), 'expected the second row to be the editing one');
+});
+
+test('Enter commits the new text', () => {
+  setup();
+  commit(startEditing(0), 'Buy oat milk');
+  eq(labels(), ['Buy oat milk', 'Call Ana', 'Book flights']);
+  eq(document.querySelectorAll('#notes .edit').length, 0);
+  eq(noteAt(0).classList.contains('editing'), false);
+});
+
+test('the state line proves the data changed', () => {
+  setup();
+  commit(startEditing(2), 'Book trains');
+  eq(document.getElementById('notes-state').textContent.trim(),
+    'Buy milk | Call Ana | Book trains');
+});
+
+test('Escape cancels the edit', () => {
+  setup();
+  const input = startEditing(0);
+  input.value = 'nope';
+  fire(input, 'keydown', { key: 'Escape' });
+  eq(labels(), ['Buy milk', 'Call Ana', 'Book flights']);
+});
+
+test('a blank commit keeps the old text', () => {
+  setup();
+  commit(startEditing(1), '   ');
+  eq(labels(), ['Buy milk', 'Call Ana', 'Book flights']);
+});
+
+test('an earlier edit survives the next one', () => {
+  setup();
+  commit(startEditing(1), 'Call Ana back');
+  commit(startEditing(0), 'Buy oat milk');
+  eq(labels(), ['Buy oat milk', 'Call Ana back', 'Book flights']);
+});
+
+window.__DEMO = function () { setup(); };
+</script>
+</body>
+</html>

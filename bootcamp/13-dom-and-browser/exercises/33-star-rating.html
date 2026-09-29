@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>33 · star-rating</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+h2 { font-size: 17px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #3b82f6;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.prompt ul, .prompt ol { margin: 8px 0 8px 20px; padding: 0; }
+.prompt li { margin: 3px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+#app > :first-child { margin-top: 0; }
+button { font: inherit; padding: 5px 11px; border: 1px solid #c8ccd3; background: #fff;
+  border-radius: 6px; cursor: pointer; }
+button:hover { border-color: #9aa1ab; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input, select, textarea { font: inherit; padding: 5px 8px; border: 1px solid #c8ccd3;
+  border-radius: 6px; }
+ul, ol { padding-left: 20px; }
+li { margin: 2px 0; }
+table { border-collapse: collapse; margin: 4px 0; }
+th, td { border: 1px solid #dfe3e8; padding: 4px 10px; text-align: left; }
+.error { color: #b91c1c; font-size: 13px; margin: 2px 0 8px; min-height: 1em; }
+.muted { color: #8b93a1; }
+.active { background: #1f2937; color: #fff; border-color: #1f2937; }
+/* ── checks panel ─────────────────────────────────────────────── */
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .summary.todo { color: #b45309; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+.rating { display: inline-flex; gap: 2px; }
+.rating .star { border: 0; background: none; font-size: 20px; line-height: 1;
+  padding: 0 2px; color: #c8ccd3; cursor: pointer; }
+.rating .star.on { color: #d97706; }
+#rating-value { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>33 · Star rating, mouse or keyboard <small>★★☆ extra</small></h1>
+  <p class="meta">concepts: aria-checked · roving tabindex · clamping · exercises/33-star-rating.html</p>
+  <section class="prompt">
+    <p>Five stars. Everything a mouse can do here, a keyboard can do too.</p>
+    <ul>
+      <li>a rating of <code>n</code> fills the first <code>n</code> stars: the
+          class <code>on</code> and the character <code>★</code>, the rest
+          <code>☆</code></li>
+      <li>clicking a star sets the rating to its <code>data-value</code></li>
+      <li><kbd>→</kbd> and <kbd>↑</kbd> add one, <kbd>←</kbd> and <kbd>↓</kbd>
+          take one away; the value is clamped between 1 and 5</li>
+      <li><code>aria-checked</code> is <code>"true"</code> on the chosen star and
+          <code>"false"</code> on every other one</li>
+      <li>roving <code>tabindex</code>: the chosen star is <code>0</code> and the
+          rest are <code>-1</code>. With no rating yet, the first star is the
+          <code>0</code></li>
+      <li><code>#rating-value</code> reads <code>3 of 5</code>, or
+          <code>not rated</code></li>
+    </ul>
+    <p class="hint">hint: the rating is a number and <code>paint()</code> writes
+    every star from it — classes, characters and both attributes. Counting
+    <code>.on</code> elements to find the current value is the version that breaks.
+    Keyboard handling lives on the group, not on each star.</p>
+  </section>
+  <div id="app">
+    <div id="rating" class="rating" role="radiogroup" aria-label="Rating">
+      <button class="star" type="button" role="radio" data-value="1" aria-checked="false" aria-label="1 star" tabindex="-1">☆</button>
+      <button class="star" type="button" role="radio" data-value="2" aria-checked="false" aria-label="2 stars" tabindex="-1">☆</button>
+      <button class="star" type="button" role="radio" data-value="3" aria-checked="false" aria-label="3 stars" tabindex="-1">☆</button>
+      <button class="star" type="button" role="radio" data-value="4" aria-checked="false" aria-label="4 stars" tabindex="-1">☆</button>
+      <button class="star" type="button" role="radio" data-value="5" aria-checked="false" aria-label="5 stars" tabindex="-1">☆</button>
+    </div>
+    <p id="rating-value" class="muted">not rated</p>
+  </div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Reload to re-run: edit this file in your editor, save, then press F5 here. Keep the console open (F12) — uncaught errors show up there.</p>
+</aside>
+<script>
+// ─── YOUR CODE ───────────────────────────────
+function setup() {
+  throw new Error('TODO: paint the stars from a number, and move it with clicks and keys');
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+var __app = document.getElementById('app');
+var __appHTML = __app ? __app.innerHTML : '';
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function reset() { if (__app) __app.innerHTML = __appHTML; }
+function wait(ms) { return new Promise(function (done) { setTimeout(done, ms); }); }
+function ok(value, msg) {
+  if (!value) throw new Error(msg || 'expected a truthy value, got ' + JSON.stringify(value));
+}
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+function fire(el, type, init) {
+  var opts = Object.assign({ bubbles: true, cancelable: true }, init || {});
+  var ev;
+  if (type.indexOf('key') === 0) ev = new KeyboardEvent(type, opts);
+  else if (type === 'input' || type === 'beforeinput') ev = new InputEvent(type, opts);
+  else if (/^(click|dbl|mouse|pointer|contextmenu)/.test(type)) ev = new MouseEvent(type, opts);
+  else ev = new Event(type, opts);
+  el.dispatchEvent(ev);
+  return ev;
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      reset();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '\u2714 ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '\u2610 ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '\u2718 ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed \u00b7 ' + failed + ' failed \u00b7 ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { reset(); if (window.__DEMO) window.__DEMO(); } catch (err) { /* still TODO */ }
+}
+setTimeout(__run, 0);
+
+function stars() {
+  return Array.from(document.querySelectorAll('#rating .star'));
+}
+
+function filled() {
+  return document.querySelectorAll('#rating .star.on').length;
+}
+
+function press(key) {
+  fire(document.getElementById('rating'), 'keydown', { key: key });
+}
+
+function reading() {
+  return document.getElementById('rating-value').textContent.trim();
+}
+
+test('starts unrated', () => {
+  setup();
+  eq(filled(), 0);
+  eq(reading(), 'not rated');
+  eq(stars().filter((star) => star.getAttribute('aria-checked') === 'true').length, 0);
+});
+
+test('clicking a star fills up to it', () => {
+  setup();
+  stars()[2].click();
+  eq(filled(), 3);
+  eq(stars()[0].textContent.trim(), '\u2605');
+  eq(stars()[3].textContent.trim(), '\u2606');
+});
+
+test('exactly one star is checked', () => {
+  setup();
+  stars()[2].click();
+  eq(stars().map((star) => star.getAttribute('aria-checked')),
+    ['false', 'false', 'true', 'false', 'false']);
+});
+
+test('the value is written out', () => {
+  setup();
+  stars()[2].click();
+  eq(reading(), '3 of 5');
+});
+
+test('clicking a lower star lowers the rating', () => {
+  setup();
+  stars()[4].click();
+  stars()[1].click();
+  eq(filled(), 2);
+  eq(reading(), '2 of 5');
+});
+
+test('ArrowRight raises the rating', () => {
+  setup();
+  stars()[2].click();
+  press('ArrowRight');
+  eq(filled(), 4);
+  eq(reading(), '4 of 5');
+});
+
+test('ArrowLeft lowers it and stops at one', () => {
+  setup();
+  stars()[1].click();
+  press('ArrowLeft');
+  eq(filled(), 1);
+  press('ArrowLeft');
+  eq(filled(), 1);
+});
+
+test('it never goes past five', () => {
+  setup();
+  stars()[4].click();
+  press('ArrowRight');
+  press('ArrowRight');
+  eq(filled(), 5);
+  eq(reading(), '5 of 5');
+});
+
+test('the keyboard works before any click', () => {
+  setup();
+  press('ArrowRight');
+  eq(filled(), 1);
+  eq(reading(), '1 of 5');
+});
+
+test('only one star is in the tab order', () => {
+  setup();
+  eq(stars().map((star) => star.getAttribute('tabindex')), ['0', '-1', '-1', '-1', '-1']);
+  stars()[3].click();
+  eq(stars().map((star) => star.getAttribute('tabindex')), ['-1', '-1', '-1', '0', '-1']);
+});
+
+window.__DEMO = function () { setup(); };
+</script>
+</body>
+</html>

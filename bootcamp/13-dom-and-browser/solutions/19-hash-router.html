@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>19 · hash-router — SOLUTION</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+h2 { font-size: 17px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #3b82f6;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.prompt ul, .prompt ol { margin: 8px 0 8px 20px; padding: 0; }
+.prompt li { margin: 3px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+#app > :first-child { margin-top: 0; }
+button { font: inherit; padding: 5px 11px; border: 1px solid #c8ccd3; background: #fff;
+  border-radius: 6px; cursor: pointer; }
+button:hover { border-color: #9aa1ab; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input, select, textarea { font: inherit; padding: 5px 8px; border: 1px solid #c8ccd3;
+  border-radius: 6px; }
+ul, ol { padding-left: 20px; }
+li { margin: 2px 0; }
+table { border-collapse: collapse; margin: 4px 0; }
+th, td { border: 1px solid #dfe3e8; padding: 4px 10px; text-align: left; }
+.error { color: #b91c1c; font-size: 13px; margin: 2px 0 8px; min-height: 1em; }
+.muted { color: #8b93a1; }
+.active { background: #1f2937; color: #fff; border-color: #1f2937; }
+/* ── checks panel ─────────────────────────────────────────────── */
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .summary.todo { color: #b45309; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+#router-nav { display: flex; gap: 14px; margin-bottom: 12px; }
+#router-nav a { color: #1d4ed8; text-decoration: none; padding: 2px 6px; border-radius: 5px; }
+#router-nav a.active { background: #1d4ed8; color: #fff; }
+#view { min-height: 80px; }
+#view h2 { margin-top: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>19 · A router in 20 lines — SOLUTION <small>★★☆ core</small></h1>
+  <p class="meta">concepts: location.hash · hashchange · views · solutions/19-hash-router.html</p>
+  <section class="prompt">
+    <p>Three "pages", no server, no page loads. The URL fragment is the state.</p>
+    <ul>
+      <li>read the route from <code>location.hash</code>:
+          <code>#/notes</code> → <code>notes</code>; an empty hash →
+          <code>home</code></li>
+      <li>render into <code>#view</code>: an <code>&lt;h2&gt;</code> with the route's
+          <code>title</code> and a <code>&lt;p&gt;</code> with its <code>body</code>
+          (clear the view first)</li>
+      <li>an unknown route renders <code>&lt;h2&gt;Not found&lt;/h2&gt;</code>, and
+          <code>#route-name</code> reads <code>not-found</code>; otherwise
+          <code>#route-name</code> is the route key</li>
+      <li>the matching <code>#router-nav</code> link gets the class
+          <code>active</code> — only one</li>
+      <li>re-render on every <code>hashchange</code>, and once at
+          <code>setup()</code> for the route the page loaded with</li>
+    </ul>
+    <p class="hint">hint: <code>location.hash</code> includes the <code>#</code>
+    (and here the slash): strip both with
+    <code>location.hash.replace(/^#\/?/, '')</code>. Clicking the links changes the
+    hash for free — the browser does not reload for a fragment change, it fires
+    <code>hashchange</code>.</p>
+  </section>
+  <div id="app">
+    <nav id="router-nav">
+      <a href="#/home" data-route="home">Home</a>
+      <a href="#/notes" data-route="notes">Notes</a>
+      <a href="#/about" data-route="about">About</a>
+      <a href="#/nope" data-route="nope">Broken link</a>
+    </nav>
+    <div id="view"></div>
+    <p id="route-name" class="muted"></p>
+  </div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Reload to re-run: edit this file in your editor, save, then press F5 here. Keep the console open (F12) — uncaught errors show up there.</p>
+</aside>
+<script>
+// ─── YOUR CODE ───────────────────────────────
+/* Walkthrough
+   A router is a function from a string to a render call. `hashchange` is the only
+   event you need, and the browser gives you back/forward navigation for free
+   because each hash is a real history entry.
+
+   `render()` is called from two places — once at startup and once per hash change.
+   Forgetting the startup call is the classic bug: the page looks empty until you
+   click something.
+
+   Note the object lookup `ROUTES[name]` returning `undefined` for an unknown key.
+   That is the whole 404 branch. Do not use `ROUTES.hasOwnProperty` gymnastics for a
+   plain data table.
+
+   Real single-page routers use the History API (`history.pushState`) for clean
+   URLs like `/notes`, but that needs a server that returns your app for every path.
+   Hash routing works from a `file://` double click, which is why it is here.
+*/
+const ROUTES = {
+  home: { title: 'Home', body: 'Welcome aboard. Nothing is loading from a server.' },
+  notes: { title: 'Notes', body: 'Three notes, none of them important.' },
+  about: { title: 'About', body: 'Written at 35,000 feet.' }
+};
+
+function setup() {
+  const view = document.getElementById('view');
+  const nav = document.getElementById('router-nav');
+  const label = document.getElementById('route-name');
+
+  function currentRoute() {
+    const name = location.hash.replace(/^#\/?/, '');
+    return name === '' ? 'home' : name;
+  }
+
+  function render() {
+    const name = currentRoute();
+    const route = ROUTES[name];
+
+    const title = document.createElement('h2');
+    const body = document.createElement('p');
+    title.textContent = route ? route.title : 'Not found';
+    body.textContent = route ? route.body : 'No page for ' + location.hash;
+
+    view.textContent = '';
+    view.append(title, body);
+
+    label.textContent = route ? name : 'not-found';
+
+    for (const link of nav.querySelectorAll('a')) {
+      link.classList.toggle('active', route !== undefined && link.dataset.route === name);
+    }
+  }
+
+  window.addEventListener('hashchange', render);
+  render();
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+var __app = document.getElementById('app');
+var __appHTML = __app ? __app.innerHTML : '';
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function reset() { if (__app) __app.innerHTML = __appHTML; }
+function wait(ms) { return new Promise(function (done) { setTimeout(done, ms); }); }
+function ok(value, msg) {
+  if (!value) throw new Error(msg || 'expected a truthy value, got ' + JSON.stringify(value));
+}
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+function fire(el, type, init) {
+  var opts = Object.assign({ bubbles: true, cancelable: true }, init || {});
+  var ev;
+  if (type.indexOf('key') === 0) ev = new KeyboardEvent(type, opts);
+  else if (type === 'input' || type === 'beforeinput') ev = new InputEvent(type, opts);
+  else if (/^(click|dbl|mouse|pointer|contextmenu)/.test(type)) ev = new MouseEvent(type, opts);
+  else ev = new Event(type, opts);
+  el.dispatchEvent(ev);
+  return ev;
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      reset();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '\u2714 ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '\u2610 ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '\u2718 ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed \u00b7 ' + failed + ' failed \u00b7 ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { reset(); if (window.__DEMO) window.__DEMO(); } catch (err) { /* still TODO */ }
+}
+setTimeout(__run, 0);
+
+test('renders the route the page loaded with', async () => {
+  location.hash = '#/notes';
+  await wait(20);
+  setup();
+  eq(document.querySelector('#view h2').textContent.trim(), 'Notes');
+});
+
+test('defaults to home when there is no hash', async () => {
+  location.hash = '';
+  await wait(20);
+  setup();
+  eq(document.querySelector('#view h2').textContent.trim(), 'Home');
+});
+
+test('renders the body text of the route', async () => {
+  location.hash = '#/about';
+  await wait(20);
+  setup();
+  eq(document.querySelector('#view p').textContent.trim(), 'Written at 35,000 feet.');
+});
+
+test('re-renders when the hash changes, with no reload', async () => {
+  location.hash = '#/home';
+  await wait(20);
+  setup();
+  location.hash = '#/about';
+  await wait(40);
+  eq(document.querySelector('#view h2').textContent.trim(), 'About');
+});
+
+test('an unknown route renders a not-found view', async () => {
+  location.hash = '#/nope';
+  await wait(20);
+  setup();
+  eq(document.querySelector('#view h2').textContent.trim(), 'Not found');
+});
+
+test('names the current route', async () => {
+  location.hash = '#/notes';
+  await wait(20);
+  setup();
+  eq(document.getElementById('route-name').textContent.trim(), 'notes');
+});
+
+test('names an unknown route "not-found"', async () => {
+  location.hash = '#/nope';
+  await wait(20);
+  setup();
+  eq(document.getElementById('route-name').textContent.trim(), 'not-found');
+});
+
+test('marks the matching nav link active', async () => {
+  location.hash = '#/notes';
+  await wait(20);
+  setup();
+  const active = document.querySelectorAll('#router-nav a.active');
+  eq(active.length, 1);
+  eq(active[0].dataset.route, 'notes');
+});
+
+test('moves the active class when the route changes', async () => {
+  location.hash = '#/notes';
+  await wait(20);
+  setup();
+  location.hash = '#/about';
+  await wait(40);
+  const active = document.querySelectorAll('#router-nav a.active');
+  eq(active.length, 1);
+  eq(active[0].dataset.route, 'about');
+});
+
+window.__DEMO = function () { setup(); };
+</script>
+</body>
+</html>

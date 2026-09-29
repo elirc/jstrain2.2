@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>05 · classlist-active</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+h2 { font-size: 17px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #3b82f6;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.prompt ul, .prompt ol { margin: 8px 0 8px 20px; padding: 0; }
+.prompt li { margin: 3px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+#app > :first-child { margin-top: 0; }
+button { font: inherit; padding: 5px 11px; border: 1px solid #c8ccd3; background: #fff;
+  border-radius: 6px; cursor: pointer; }
+button:hover { border-color: #9aa1ab; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input, select, textarea { font: inherit; padding: 5px 8px; border: 1px solid #c8ccd3;
+  border-radius: 6px; }
+ul, ol { padding-left: 20px; }
+li { margin: 2px 0; }
+table { border-collapse: collapse; margin: 4px 0; }
+th, td { border: 1px solid #dfe3e8; padding: 4px 10px; text-align: left; }
+.error { color: #b91c1c; font-size: 13px; margin: 2px 0 8px; min-height: 1em; }
+.muted { color: #8b93a1; }
+.active { background: #1f2937; color: #fff; border-color: #1f2937; }
+/* ── checks panel ─────────────────────────────────────────────── */
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .summary.todo { color: #b45309; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+.panel { border: 1px dashed #c8ccd3; border-radius: 6px; padding: 14px; margin-top: 8px; }
+.panel.compact { padding: 2px 6px; font-size: 12px; }
+#viewnav button { margin-right: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>05 · Classes and the active item <small>★★☆ core</small></h1>
+  <p class="meta">concepts: classList · aria-pressed · state in the DOM · exercises/05-classlist-active.html</p>
+  <section class="prompt">
+    <p>Two little widgets, both driven by <code>classList</code>.</p>
+    <p><strong>The nav:</strong> clicking a <code>.nav-btn</code> gives it the class
+    <code>active</code> and takes that class off every other button — exactly one
+    active item, always. <code>#current</code> then reads
+    <code>Viewing: docs</code> (the button's <code>data-view</code>).</p>
+    <p><strong>The compact toggle:</strong> <code>#compact</code> flips the class
+    <code>compact</code> on <code>#panel</code>, and keeps its own label and
+    <code>aria-pressed</code> in sync: <code>Compact mode: on</code> /
+    <code>Compact mode: off</code>.</p>
+    <p><code>setup()</code> also paints the starting state: nothing active, compact
+    off.</p>
+    <p class="hint">hint: "remove the class from everyone, then add it to one" beats
+    tracking which button was previously active. <code>el.classList.toggle('x')</code>
+    returns <code>true</code> when it just added the class.</p>
+  </section>
+  <div id="app">
+    <nav id="viewnav">
+      <button class="nav-btn" data-view="home">Home</button>
+      <button class="nav-btn" data-view="docs">Docs</button>
+      <button class="nav-btn" data-view="about">About</button>
+    </nav>
+    <p id="current">Nothing selected</p>
+    <p><button id="compact" aria-pressed="false">Compact mode</button></p>
+    <div id="panel" class="panel">Some panel content that can get compact.</div>
+  </div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Reload to re-run: edit this file in your editor, save, then press F5 here. Keep the console open (F12) — uncaught errors show up there.</p>
+</aside>
+<script>
+// ─── YOUR CODE ───────────────────────────────
+function setup() {
+  throw new Error('TODO: wire up the nav buttons and the compact toggle');
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+var __app = document.getElementById('app');
+var __appHTML = __app ? __app.innerHTML : '';
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function reset() { if (__app) __app.innerHTML = __appHTML; }
+function wait(ms) { return new Promise(function (done) { setTimeout(done, ms); }); }
+function ok(value, msg) {
+  if (!value) throw new Error(msg || 'expected a truthy value, got ' + JSON.stringify(value));
+}
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+function fire(el, type, init) {
+  var opts = Object.assign({ bubbles: true, cancelable: true }, init || {});
+  var ev;
+  if (type.indexOf('key') === 0) ev = new KeyboardEvent(type, opts);
+  else if (type === 'input' || type === 'beforeinput') ev = new InputEvent(type, opts);
+  else if (/^(click|dbl|mouse|pointer|contextmenu)/.test(type)) ev = new MouseEvent(type, opts);
+  else ev = new Event(type, opts);
+  el.dispatchEvent(ev);
+  return ev;
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      reset();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '\u2714 ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '\u2610 ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '\u2718 ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed \u00b7 ' + failed + ' failed \u00b7 ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { reset(); if (window.__DEMO) window.__DEMO(); } catch (err) { /* still TODO */ }
+}
+setTimeout(__run, 0);
+
+test('starts with no active nav button and compact off', () => {
+  setup();
+  eq(document.querySelectorAll('#viewnav .active').length, 0);
+  eq(document.getElementById('compact').textContent.trim(), 'Compact mode: off');
+});
+
+test('clicking a nav button marks it active', () => {
+  setup();
+  const docs = document.querySelectorAll('#viewnav .nav-btn')[1];
+  docs.click();
+  ok(docs.classList.contains('active'), 'expected the clicked button to be active');
+});
+
+test('only one nav button is active at a time', () => {
+  setup();
+  const buttons = document.querySelectorAll('#viewnav .nav-btn');
+  buttons[0].click();
+  buttons[2].click();
+  eq(document.querySelectorAll('#viewnav .active').length, 1);
+  ok(buttons[2].classList.contains('active'), 'expected the last click to win');
+});
+
+test('clicking the active button again leaves it active', () => {
+  setup();
+  const home = document.querySelector('#viewnav .nav-btn');
+  home.click();
+  home.click();
+  ok(home.classList.contains('active'), 'active must not toggle off');
+});
+
+test('shows the data-view of the chosen button', () => {
+  setup();
+  document.querySelectorAll('#viewnav .nav-btn')[1].click();
+  eq(document.getElementById('current').textContent.trim(), 'Viewing: docs');
+});
+
+test('the compact button adds the compact class to the panel', () => {
+  setup();
+  document.getElementById('compact').click();
+  ok(document.getElementById('panel').classList.contains('compact'),
+    'expected #panel to be compact');
+});
+
+test('clicking compact twice removes the class again', () => {
+  setup();
+  const compact = document.getElementById('compact');
+  compact.click();
+  compact.click();
+  eq(document.getElementById('panel').classList.contains('compact'), false);
+});
+
+test('keeps the compact label and aria-pressed in sync', () => {
+  setup();
+  const compact = document.getElementById('compact');
+  compact.click();
+  eq(compact.textContent.trim(), 'Compact mode: on');
+  eq(compact.getAttribute('aria-pressed'), 'true');
+  compact.click();
+  eq(compact.textContent.trim(), 'Compact mode: off');
+  eq(compact.getAttribute('aria-pressed'), 'false');
+});
+
+window.__DEMO = function () { setup(); };
+</script>
+</body>
+</html>

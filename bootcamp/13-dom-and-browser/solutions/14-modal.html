@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>14 · modal — SOLUTION</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+h2 { font-size: 17px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #3b82f6;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.prompt ul, .prompt ol { margin: 8px 0 8px 20px; padding: 0; }
+.prompt li { margin: 3px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+#app > :first-child { margin-top: 0; }
+button { font: inherit; padding: 5px 11px; border: 1px solid #c8ccd3; background: #fff;
+  border-radius: 6px; cursor: pointer; }
+button:hover { border-color: #9aa1ab; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input, select, textarea { font: inherit; padding: 5px 8px; border: 1px solid #c8ccd3;
+  border-radius: 6px; }
+ul, ol { padding-left: 20px; }
+li { margin: 2px 0; }
+table { border-collapse: collapse; margin: 4px 0; }
+th, td { border: 1px solid #dfe3e8; padding: 4px 10px; text-align: left; }
+.error { color: #b91c1c; font-size: 13px; margin: 2px 0 8px; min-height: 1em; }
+.muted { color: #8b93a1; }
+.active { background: #1f2937; color: #fff; border-color: #1f2937; }
+/* ── checks panel ─────────────────────────────────────────────── */
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .summary.todo { color: #b45309; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+.backdrop { position: fixed; inset: 0; background: rgba(15, 20, 30, .45);
+  display: flex; align-items: center; justify-content: center; }
+.backdrop[hidden] { display: none; }
+.modal { background: #fff; border-radius: 10px; padding: 18px 22px; min-width: 300px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .3); }
+.modal h2 { margin-top: 0; }
+body.modal-open { overflow: hidden; }
+</style>
+</head>
+<body>
+<main>
+  <h1>14 · Modal dialog — SOLUTION <small>★★☆ core</small></h1>
+  <p class="meta">concepts: components · backdrop click · Escape · solutions/14-modal.html</p>
+  <section class="prompt">
+    <p>A modal: a panel over a backdrop that blocks the page.</p>
+    <ul>
+      <li><code>#open-modal</code> shows it — <code>#backdrop</code> stops being
+          hidden, <code>&lt;body&gt;</code> gets the class <code>modal-open</code>,
+          and <code>#modal-state</code> reads <code>open</code></li>
+      <li><code>#close-modal</code> hides it again and reverses all of that
+          (<code>#modal-state</code> reads <code>closed</code>)</li>
+      <li>clicking the <em>backdrop itself</em> closes it</li>
+      <li>clicking inside the dialog does <strong>not</strong> close it</li>
+      <li><code>Escape</code> anywhere on the page closes it</li>
+    </ul>
+    <p class="hint">hint: the backdrop click and the dialog click are the same
+    bubbling event — tell them apart with
+    <code>if (event.target === backdrop)</code>. <code>event.target</code> is what
+    was clicked; <code>event.currentTarget</code> is what the listener is on.
+    Escape is a <code>keydown</code> listener on <code>document</code>.</p>
+  </section>
+  <div id="app">
+    <button id="open-modal">Open settings</button>
+    <p id="modal-state">closed</p>
+    <div id="backdrop" class="backdrop" hidden>
+      <div id="modal" class="modal" role="dialog" aria-modal="true" aria-label="Settings">
+        <h2>Settings</h2>
+        <p>Nothing to configure. That is the setting.</p>
+        <button id="close-modal">Close</button>
+      </div>
+    </div>
+  </div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Reload to re-run: edit this file in your editor, save, then press F5 here. Keep the console open (F12) — uncaught errors show up there.</p>
+</aside>
+<script>
+// ─── YOUR CODE ───────────────────────────────
+/* Walkthrough
+   `setOpen(open)` is the whole component. Four different triggers, one state
+   function — the alternative is four handlers each remembering to do three things.
+
+   The backdrop check is the bit people get wrong. A click on the dialog bubbles up
+   to the backdrop, so a naive `backdrop.onclick = close` shuts the modal whenever
+   you click your own form. `event.target === backdrop` means "the click landed on
+   the backdrop itself, not on something inside it".
+
+   Note the CSS: `.backdrop { display: flex }` overrides the browser's built-in
+   `[hidden] { display: none }`, so the `hidden` property silently stops working.
+   That is why `.backdrop[hidden] { display: none }` is in the stylesheet. Any time
+   you set `display` on an element you also hide with `hidden`, you owe it that rule.
+
+   The Escape listener has to be on `document` — the modal may have nothing
+   focused, and keyboard events only reach elements in the focus path.
+*/
+function setup() {
+  const backdrop = document.getElementById('backdrop');
+  const state = document.getElementById('modal-state');
+
+  function setOpen(open) {
+    backdrop.hidden = !open;
+    document.body.classList.toggle('modal-open', open);
+    state.textContent = open ? 'open' : 'closed';
+  }
+
+  document.getElementById('open-modal').addEventListener('click', () => setOpen(true));
+  document.getElementById('close-modal').addEventListener('click', () => setOpen(false));
+
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop) setOpen(false);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (backdrop.hidden) return;
+    if (event.key === 'Escape') setOpen(false);
+  });
+
+  setOpen(false);
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+var __app = document.getElementById('app');
+var __appHTML = __app ? __app.innerHTML : '';
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function reset() { if (__app) __app.innerHTML = __appHTML; }
+function wait(ms) { return new Promise(function (done) { setTimeout(done, ms); }); }
+function ok(value, msg) {
+  if (!value) throw new Error(msg || 'expected a truthy value, got ' + JSON.stringify(value));
+}
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+function fire(el, type, init) {
+  var opts = Object.assign({ bubbles: true, cancelable: true }, init || {});
+  var ev;
+  if (type.indexOf('key') === 0) ev = new KeyboardEvent(type, opts);
+  else if (type === 'input' || type === 'beforeinput') ev = new InputEvent(type, opts);
+  else if (/^(click|dbl|mouse|pointer|contextmenu)/.test(type)) ev = new MouseEvent(type, opts);
+  else ev = new Event(type, opts);
+  el.dispatchEvent(ev);
+  return ev;
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      reset();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '\u2714 ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '\u2610 ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '\u2718 ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed \u00b7 ' + failed + ' failed \u00b7 ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { reset(); if (window.__DEMO) window.__DEMO(); } catch (err) { /* still TODO */ }
+}
+setTimeout(__run, 0);
+
+function isOpen() {
+  return !document.getElementById('backdrop').hidden;
+}
+
+test('starts closed', () => {
+  setup();
+  eq(isOpen(), false);
+  eq(document.getElementById('modal-state').textContent.trim(), 'closed');
+});
+
+test('the open button shows the modal', () => {
+  setup();
+  document.getElementById('open-modal').click();
+  eq(isOpen(), true);
+  eq(document.getElementById('modal-state').textContent.trim(), 'open');
+});
+
+test('opening marks the body with modal-open', () => {
+  setup();
+  document.getElementById('open-modal').click();
+  ok(document.body.classList.contains('modal-open'), 'expected body.modal-open');
+});
+
+test('the close button hides it again', () => {
+  setup();
+  document.getElementById('open-modal').click();
+  document.getElementById('close-modal').click();
+  eq(isOpen(), false);
+  eq(document.getElementById('modal-state').textContent.trim(), 'closed');
+});
+
+test('closing takes modal-open off the body', () => {
+  setup();
+  document.getElementById('open-modal').click();
+  document.getElementById('close-modal').click();
+  eq(document.body.classList.contains('modal-open'), false);
+});
+
+test('clicking the backdrop closes it', () => {
+  setup();
+  document.getElementById('open-modal').click();
+  document.getElementById('backdrop').click();
+  eq(isOpen(), false);
+});
+
+test('clicking inside the dialog does not close it', () => {
+  setup();
+  document.getElementById('open-modal').click();
+  document.getElementById('modal').click();
+  eq(isOpen(), true, 'a click inside the dialog must not close the modal');
+});
+
+test('clicking the dialog heading does not close it either', () => {
+  setup();
+  document.getElementById('open-modal').click();
+  document.querySelector('#modal h2').click();
+  eq(isOpen(), true);
+});
+
+test('Escape closes it', () => {
+  setup();
+  document.getElementById('open-modal').click();
+  fire(document, 'keydown', { key: 'Escape' });
+  eq(isOpen(), false);
+});
+
+test('Escape while closed leaves it closed', () => {
+  setup();
+  fire(document, 'keydown', { key: 'Escape' });
+  eq(isOpen(), false);
+  eq(document.getElementById('modal-state').textContent.trim(), 'closed');
+});
+
+window.__DEMO = function () { setup(); };
+</script>
+</body>
+</html>

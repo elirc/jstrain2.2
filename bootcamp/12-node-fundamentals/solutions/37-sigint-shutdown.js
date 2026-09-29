@@ -1,0 +1,149 @@
+// ─────────────────────────────────────────────────────────────────────────
+//  37 · graceful shutdown on SIGINT — SOLUTION               ★★★ stretch
+//  run: node 37-sigint-shutdown.js
+// ─────────────────────────────────────────────────────────────────────────
+//
+//  Walkthrough: `target` instead of the global `process` is what makes a
+//  signal handler testable at all — the tests emit SIGINT on a fake and
+//  assert the exit code, and the last one proves the same function works
+//  on the real process object with only exit() swapped out.
+//  `shuttingDown` is the run-once guard. Signals repeat: an impatient
+//  Ctrl-C-Ctrl-C would otherwise start a second cleanup while the first
+//  is mid-flight, and closing the same handle twice throws.
+//  The handler is async, so `await cleanup()` finishes before exit(). The
+//  classic wrong turn is calling `process.exit(0)` right after firing the
+//  cleanup: exit is immediate and synchronous, so the flush you were
+//  waiting for never lands.
+//  try/catch → exit(1) makes a failed cleanup visible to whatever
+//  supervises the process, and the returned closure removes the exact
+//  handler it registered — off() matches by identity, not by shape.
+
+import { test, eq, ok, spy, sleep } from '../../_lib/check.js';
+import { EventEmitter } from 'node:events';
+
+// Provided: a stand-in for `process` — same on/off/emit, plus an exit()
+// that records instead of killing the test run.
+function fakeProcess() {
+  const target = new EventEmitter();
+  target.exit = spy();
+  return target;
+}
+
+export function installShutdown(target, cleanup) {
+  let shuttingDown = false;
+
+  const onSignal = async () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    try {
+      await cleanup();
+      target.exit(0);
+    } catch {
+      target.exit(1);
+    }
+  };
+
+  target.on('SIGINT', onSignal);
+  return () => target.off('SIGINT', onSignal);
+}
+
+// ──────────────────────────── tests ──────────────────────────────────────
+
+test('installs exactly one SIGINT listener and hands back an uninstall', () => {
+  const target = fakeProcess();
+  const uninstall = installShutdown(target, () => {});
+  ok(typeof uninstall === 'function');
+  eq(target.listenerCount('SIGINT'), 1);
+  uninstall();
+});
+
+test('SIGINT runs the cleanup', async () => {
+  const target = fakeProcess();
+  const cleanup = spy();
+  const uninstall = installShutdown(target, cleanup);
+  target.emit('SIGINT');
+  await sleep(10);
+  eq(cleanup.callCount, 1);
+  uninstall();
+});
+
+test('an async cleanup finishes before the exit', async () => {
+  const log = [];
+  const target = fakeProcess();
+  target.exit = spy(() => log.push('exit'));
+  const uninstall = installShutdown(target, async () => {
+    log.push('cleanup start');
+    await sleep(10);
+    log.push('cleanup done');
+  });
+  target.emit('SIGINT');
+  await sleep(50);
+  eq(log, ['cleanup start', 'cleanup done', 'exit']);
+  uninstall();
+});
+
+test('a clean shutdown exits with code 0', async () => {
+  const target = fakeProcess();
+  const uninstall = installShutdown(target, async () => {});
+  target.emit('SIGINT');
+  await sleep(20);
+  eq(target.exit.calls, [[0]]);
+  uninstall();
+});
+
+test('a cleanup that fails exits with code 1', async () => {
+  const target = fakeProcess();
+  const uninstall = installShutdown(target, async () => {
+    throw new Error('could not flush');
+  });
+  target.emit('SIGINT');
+  await sleep(20);
+  eq(target.exit.calls, [[1]]);
+  uninstall();
+});
+
+test('a second SIGINT does not run the cleanup twice', async () => {
+  const target = fakeProcess();
+  const cleanup = spy(async () => sleep(5));
+  const uninstall = installShutdown(target, cleanup);
+  target.emit('SIGINT');
+  target.emit('SIGINT');
+  await sleep(30);
+  target.emit('SIGINT');
+  await sleep(10);
+  eq(cleanup.callCount, 1);
+  uninstall();
+});
+
+test('uninstall removes the listener it added', async () => {
+  const target = fakeProcess();
+  const cleanup = spy();
+  const uninstall = installShutdown(target, cleanup);
+  uninstall();
+  eq(target.listenerCount('SIGINT'), 0);
+  target.emit('SIGINT');
+  await sleep(10);
+  eq(cleanup.callCount, 0);
+});
+
+test('it works on the real process object', async () => {
+  const cleanup = spy();
+  const exit = spy();
+  const uninstall = installShutdown(
+    {
+      on: (name, handler) => process.on(name, handler),
+      off: (name, handler) => process.off(name, handler),
+      exit,
+    },
+    cleanup
+  );
+  try {
+    process.emit('SIGINT');
+    await sleep(20);
+    eq(cleanup.callCount, 1);
+    eq(exit.calls, [[0]]);
+  } finally {
+    uninstall();
+  }
+  eq(process.listenerCount('SIGINT'), 0);
+});

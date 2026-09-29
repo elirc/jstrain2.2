@@ -1,0 +1,72 @@
+// ─────────────────────────────────────────────────────────────────────────
+//  08 · groupBy — SOLUTION                                 ★★☆ core
+//  run: node 08-group-by.js
+// ─────────────────────────────────────────────────────────────────────────
+//
+//  Walkthrough: the accumulator is an object of arrays, so every key needs
+//  an array created before the first push. `??=` assigns only when the key
+//  is missing, which keeps it to one line. Order falls out for free: reduce
+//  walks left to right, so each bucket is in source order. Node ships a
+//  built-in `Object.groupBy(items, keyFn)` — worth knowing, but it returns
+//  a null-prototype object, so `result.constructor` and friends are gone
+//  and a deep-equal against a plain `{}` fails.
+
+import { test, eq, ok } from '../../_lib/check.js';
+
+const PRODUCTS = [
+  { id: 'p1', name: 'Keyboard',     category: 'input',   price: 89,  stock: 12 },
+  { id: 'p2', name: 'Mouse',        category: 'input',   price: 45,  stock: 0 },
+  { id: 'p3', name: 'Monitor',      category: 'display', price: 320, stock: 4 },
+  { id: 'p4', name: 'USB-C Hub',    category: 'adapter', price: 29,  stock: 31 },
+  { id: 'p5', name: 'Laptop Stand', category: 'desk',    price: 55,  stock: 7 },
+  { id: 'p6', name: 'Webcam',       category: 'video',   price: 62,  stock: 0 },
+  { id: 'p7', name: 'HDMI Cable',   category: 'adapter', price: 12,  stock: 58 },
+  { id: 'p8', name: 'Desk Lamp',    category: 'desk',    price: 34,  stock: 3 },
+];
+
+export function groupBy(items, keyFn) {
+  return items.reduce((groups, item) => {
+    const key = keyFn(item);
+    (groups[key] ??= []).push(item);
+    return groups;
+  }, {});
+}
+
+// ──────────────────────────── tests ──────────────────────────────────────
+
+test('groups the catalogue by category', () => {
+  const groups = groupBy(PRODUCTS, (p) => p.category);
+  eq(Object.keys(groups), ['input', 'display', 'adapter', 'desk', 'video']);
+});
+
+test('each bucket keeps the items in catalogue order', () => {
+  const groups = groupBy(PRODUCTS, (p) => p.category);
+  eq(groups.adapter.map((p) => p.id), ['p4', 'p7']);
+});
+
+test('buckets hold the original objects, not copies', () => {
+  const groups = groupBy(PRODUCTS, (p) => p.category);
+  ok(groups.input[0] === PRODUCTS[0]);
+});
+
+test('a computed key groups numbers by parity', () => {
+  eq(groupBy([1, 2, 3, 4, 5], (n) => (n % 2 ? 'odd' : 'even')), {
+    odd: [1, 3, 5],
+    even: [2, 4],
+  });
+});
+
+test('an empty list groups to an empty object', () => {
+  eq(groupBy([], (x) => x), {});
+});
+
+test('every item lands in exactly one bucket', () => {
+  const groups = groupBy(PRODUCTS, (p) => p.category);
+  const total = Object.values(groups).reduce((n, list) => n + list.length, 0);
+  eq(total, PRODUCTS.length);
+});
+
+test('keys that nothing matched are absent, not empty arrays', () => {
+  const groups = groupBy(PRODUCTS, (p) => p.category);
+  eq('audio' in groups, false);
+});

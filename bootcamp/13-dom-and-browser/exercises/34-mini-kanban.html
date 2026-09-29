@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>34 · mini-kanban</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+h2 { font-size: 17px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #3b82f6;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.prompt ul, .prompt ol { margin: 8px 0 8px 20px; padding: 0; }
+.prompt li { margin: 3px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+#app > :first-child { margin-top: 0; }
+button { font: inherit; padding: 5px 11px; border: 1px solid #c8ccd3; background: #fff;
+  border-radius: 6px; cursor: pointer; }
+button:hover { border-color: #9aa1ab; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input, select, textarea { font: inherit; padding: 5px 8px; border: 1px solid #c8ccd3;
+  border-radius: 6px; }
+ul, ol { padding-left: 20px; }
+li { margin: 2px 0; }
+table { border-collapse: collapse; margin: 4px 0; }
+th, td { border: 1px solid #dfe3e8; padding: 4px 10px; text-align: left; }
+.error { color: #b91c1c; font-size: 13px; margin: 2px 0 8px; min-height: 1em; }
+.muted { color: #8b93a1; }
+.active { background: #1f2937; color: #fff; border-color: #1f2937; }
+/* ── checks panel ─────────────────────────────────────────────── */
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .summary.todo { color: #b45309; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+.board { display: flex; gap: 12px; align-items: flex-start; }
+.board .column { flex: 1 1 0; border: 1px solid #e3e6ea; border-radius: 8px;
+  padding: 8px 10px; background: #fbfcfd; }
+.board .column h3 { font-size: 13px; margin: 0 0 6px; color: #6b7280; }
+.board .count { background: #eef1f5; border-radius: 10px; padding: 0 7px;
+  font-size: 12px; margin-left: 4px; }
+.board .cards { list-style: none; padding: 0; margin: 0; min-height: 24px; }
+.board .card { display: flex; align-items: center; gap: 4px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 6px; padding: 4px 6px; margin: 4px 0; }
+.board .card .title { flex: 1 1 auto; font-size: 13px; }
+.board .card button { padding: 0 6px; }
+#board-state { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>34 · A board that remembers <small>★★★ stretch</small></h1>
+  <p class="meta">concepts: one state object · projection into columns · JSON in storage · exercises/34-mini-kanban.html</p>
+  <section class="prompt">
+    <p>The finale: three columns, cards that move between them with buttons, and a
+    board that is still there after a reload.</p>
+    <ul>
+      <li>the state is one object, <code>id → column</code>. Every card starts in
+          <code>COLUMNS[0]</code></li>
+      <li>render each card into its column as
+          <code>&lt;li class="card" data-id="c1"&gt;</code> with a
+          <code>.title</code> and two buttons carrying
+          <code>data-move="left"</code> / <code>"right"</code>. Inside a column
+          cards keep their <code>CARDS</code> order, so one that moves out and
+          comes back lands where it started</li>
+      <li>left in the first column and right in the last are
+          <code>disabled</code></li>
+      <li>each column's <code>.count</code> shows how many cards it holds, and
+          <code>#board-state</code> reads
+          <code>todo 2 · doing 1 · done 0</code></li>
+      <li>every move saves the state as JSON under <code>BOARD_KEY</code>, and
+          setup restores it — junk, a missing key or a card parked in a column that
+          no longer exists all fall back to the default board</li>
+    </ul>
+    <p class="hint">hint: <code>JSON.parse</code> throws on anything that is not
+    JSON, so it belongs inside the same <code>try/catch</code> as the read — and
+    valid JSON is still not valid <em>data</em>. Check each saved value against
+    <code>COLUMNS</code> before you trust it. Render by filtering
+    <code>CARDS</code> per column, so a card can only ever be in one place.</p>
+  </section>
+  <div id="app">
+    <div id="board" class="board">
+      <section class="column" data-column="todo">
+        <h3>To do <span class="count" data-count="todo">0</span></h3>
+        <ul class="cards" data-list="todo"></ul>
+      </section>
+      <section class="column" data-column="doing">
+        <h3>Doing <span class="count" data-count="doing">0</span></h3>
+        <ul class="cards" data-list="doing"></ul>
+      </section>
+      <section class="column" data-column="done">
+        <h3>Done <span class="count" data-count="done">0</span></h3>
+        <ul class="cards" data-list="done"></ul>
+      </section>
+    </div>
+    <p id="board-state" class="muted"></p>
+  </div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Reload to re-run: edit this file in your editor, save, then press F5 here. Keep the console open (F12) — uncaught errors show up there.</p>
+</aside>
+<script>
+// ─── YOUR CODE ───────────────────────────────
+const BOARD_KEY = 'dom.board';
+const COLUMNS = ['todo', 'doing', 'done'];
+const CARDS = [
+  { id: 'c1', title: 'Write spec' },
+  { id: 'c2', title: 'Fix login' },
+  { id: 'c3', title: 'Ship it' },
+];
+
+function setup() {
+  throw new Error('TODO: place every card, move it with the buttons, and save the board');
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+var __app = document.getElementById('app');
+var __appHTML = __app ? __app.innerHTML : '';
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function reset() { if (__app) __app.innerHTML = __appHTML; }
+function wait(ms) { return new Promise(function (done) { setTimeout(done, ms); }); }
+function ok(value, msg) {
+  if (!value) throw new Error(msg || 'expected a truthy value, got ' + JSON.stringify(value));
+}
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+function fire(el, type, init) {
+  var opts = Object.assign({ bubbles: true, cancelable: true }, init || {});
+  var ev;
+  if (type.indexOf('key') === 0) ev = new KeyboardEvent(type, opts);
+  else if (type === 'input' || type === 'beforeinput') ev = new InputEvent(type, opts);
+  else if (/^(click|dbl|mouse|pointer|contextmenu)/.test(type)) ev = new MouseEvent(type, opts);
+  else ev = new Event(type, opts);
+  el.dispatchEvent(ev);
+  return ev;
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      reset();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '\u2714 ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '\u2610 ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '\u2718 ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed \u00b7 ' + failed + ' failed \u00b7 ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { reset(); if (window.__DEMO) window.__DEMO(); } catch (err) { /* still TODO */ }
+}
+setTimeout(__run, 0);
+
+function cardsIn(column) {
+  return Array.from(document.querySelectorAll('[data-list="' + column + '"] .card .title'))
+    .map((el) => el.textContent.trim());
+}
+
+function counts() {
+  return COLUMNS.map((column) =>
+    document.querySelector('[data-count="' + column + '"]').textContent.trim());
+}
+
+function card(id) {
+  return document.querySelector('.card[data-id="' + id + '"]');
+}
+
+function moveCard(id, direction) {
+  card(id).querySelector('[data-move="' + direction + '"]').click();
+}
+
+test('every card starts in the first column', () => {
+  localStorage.clear();
+  setup();
+  eq(cardsIn('todo'), ['Write spec', 'Fix login', 'Ship it']);
+  eq(cardsIn('doing'), []);
+  eq(cardsIn('done'), []);
+  eq(counts(), ['3', '0', '0']);
+});
+
+test('the ends of the board cannot be left', () => {
+  localStorage.clear();
+  setup();
+  eq(card('c1').querySelector('[data-move="left"]').disabled, true);
+  eq(card('c1').querySelector('[data-move="right"]').disabled, false);
+});
+
+test('a card moves right into the next column', () => {
+  localStorage.clear();
+  setup();
+  moveCard('c2', 'right');
+  eq(cardsIn('todo'), ['Write spec', 'Ship it']);
+  eq(cardsIn('doing'), ['Fix login']);
+  eq(counts(), ['2', '1', '0']);
+  eq(document.getElementById('board-state').textContent.trim(),
+    'todo 2 \u00b7 doing 1 \u00b7 done 0');
+});
+
+test('the card exists exactly once on the board', () => {
+  localStorage.clear();
+  setup();
+  moveCard('c2', 'right');
+  eq(document.querySelectorAll('.card[data-id="c2"]').length, 1);
+});
+
+test('two moves reach the last column, where right is dead', () => {
+  localStorage.clear();
+  setup();
+  moveCard('c2', 'right');
+  moveCard('c2', 'right');
+  eq(cardsIn('done'), ['Fix login']);
+  eq(card('c2').querySelector('[data-move="right"]').disabled, true);
+  eq(counts(), ['2', '0', '1']);
+});
+
+test('a card comes back the way it went', () => {
+  localStorage.clear();
+  setup();
+  moveCard('c2', 'right');
+  moveCard('c2', 'left');
+  eq(cardsIn('todo'), ['Write spec', 'Fix login', 'Ship it']);
+  eq(counts(), ['3', '0', '0']);
+});
+
+test('the board is saved', () => {
+  localStorage.clear();
+  setup();
+  moveCard('c3', 'right');
+  const saved = JSON.parse(localStorage.getItem(BOARD_KEY));
+  eq(saved.c3, 'doing');
+  eq(saved.c1, 'todo');
+});
+
+test('a saved board comes back on load', () => {
+  localStorage.clear();
+  localStorage.setItem(BOARD_KEY, JSON.stringify({ c1: 'todo', c2: 'done', c3: 'doing' }));
+  setup();
+  eq(cardsIn('done'), ['Fix login']);
+  eq(cardsIn('doing'), ['Ship it']);
+  eq(counts(), ['1', '1', '1']);
+});
+
+test('junk in storage falls back to a fresh board', () => {
+  localStorage.clear();
+  localStorage.setItem(BOARD_KEY, 'not json at all');
+  setup();
+  eq(counts(), ['3', '0', '0']);
+});
+
+test('a card parked in a column that no longer exists comes home', () => {
+  localStorage.clear();
+  localStorage.setItem(BOARD_KEY, JSON.stringify({ c1: 'nowhere', c2: 'doing' }));
+  setup();
+  eq(cardsIn('todo'), ['Write spec', 'Ship it']);
+  eq(cardsIn('doing'), ['Fix login']);
+  eq(counts(), ['2', '1', '0']);
+});
+
+window.__DEMO = function () { setup(); };
+</script>
+</body>
+</html>

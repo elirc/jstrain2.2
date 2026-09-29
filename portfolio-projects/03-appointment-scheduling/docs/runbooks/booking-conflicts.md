@@ -1,0 +1,3 @@
+# Booking-conflict incident
+
+Alert when conflict rate rises above 20% for five minutes or any duplicate allocation is reported. Pause new booking, preserve database/WAL/logs, identify intersecting active appointments using half-open comparison, and distinguish expected popular-slot races from invariant failure. Never delete a confirmed appointment automatically. Contact operators/customers, select the valid allocation using audit timestamps and policy, cancel only with an explicit reason, then run the concurrency and integrity suite before reopening. Escalate immediately if another database writer bypasses the repository.

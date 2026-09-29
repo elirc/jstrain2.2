@@ -1,0 +1,4 @@
+import {describe,expect,it}from'vitest';import{overlaps,transition,DomainError,can}from'../packages/domain/src/index.js';
+describe('half-open resource intervals',()=>{it.each([[0,10,10,20,false],[0,10,9,20,true],[5,15,0,5,false],[5,15,5,15,true]])('%s..%s with %s..%s => %s',(a,b,c,d,want)=>expect(overlaps(a,b,c,d)).toBe(want));});
+describe('appointment lifecycle',()=>{it('accepts the named happy path',()=>{expect(transition('confirmed','checked_in')).toBe('checked_in');expect(transition('checked_in','in_progress')).toBe('in_progress');expect(transition('in_progress','completed')).toBe('completed');});it('rejects impossible resurrection',()=>expect(()=>transition('cancelled','confirmed')).toThrow(DomainError));});
+describe('permissions',()=>{it('keeps customers out of configuration and clinical work',()=>{expect(can('customer','configure')).toBe(false);expect(can('customer','clinical')).toBe(false);expect(can('admin','configure')).toBe(true);});});

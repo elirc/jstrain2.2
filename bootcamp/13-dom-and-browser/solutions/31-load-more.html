@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>31 · load-more — SOLUTION</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+h2 { font-size: 17px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #3b82f6;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.prompt ul, .prompt ol { margin: 8px 0 8px 20px; padding: 0; }
+.prompt li { margin: 3px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+#app > :first-child { margin-top: 0; }
+button { font: inherit; padding: 5px 11px; border: 1px solid #c8ccd3; background: #fff;
+  border-radius: 6px; cursor: pointer; }
+button:hover { border-color: #9aa1ab; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input, select, textarea { font: inherit; padding: 5px 8px; border: 1px solid #c8ccd3;
+  border-radius: 6px; }
+ul, ol { padding-left: 20px; }
+li { margin: 2px 0; }
+table { border-collapse: collapse; margin: 4px 0; }
+th, td { border: 1px solid #dfe3e8; padding: 4px 10px; text-align: left; }
+.error { color: #b91c1c; font-size: 13px; margin: 2px 0 8px; min-height: 1em; }
+.muted { color: #8b93a1; }
+.active { background: #1f2937; color: #fff; border-color: #1f2937; }
+/* ── checks panel ─────────────────────────────────────────────── */
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .summary.todo { color: #b45309; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+#feed { list-style: none; padding: 0; margin: 8px 0; max-width: 420px; }
+#feed .post { padding: 5px 0; border-bottom: 1px solid #f0f2f5; }
+#feed-status { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>31 · Load more, until there is no more — SOLUTION <small>★★☆ extra</small></h1>
+  <p class="meta">concepts: a cursor in state · slice · exhausted state · solutions/31-load-more.html</p>
+  <section class="prompt">
+    <p>An infinite feed, minus the infinite scroll. The button is the same state
+    machine an <code>IntersectionObserver</code> would drive, and a keyboard can
+    reach it.</p>
+    <ul>
+      <li>on load, show the first <code>PAGE</code> posts of <code>POSTS</code></li>
+      <li>each click <strong>appends</strong> the next <code>PAGE</code>, keeping
+          the ones already there</li>
+      <li>every post is
+          <code>&lt;li class="post" data-index="7"&gt;</code> — the index is its
+          position in <code>POSTS</code></li>
+      <li><code>#feed-status</code> reads <code>Showing 10 of 12</code></li>
+      <li>once everything is shown the button is <code>disabled</code> and reads
+          <code>No more posts</code>; the last page is a short one</li>
+    </ul>
+    <p class="hint">hint: keep a <code>shown</code> cursor in a variable and let
+    <code>POSTS.slice(shown, shown + PAGE)</code> do the arithmetic — slicing past
+    the end just returns what is left, so the short last page needs no special
+    case. Counting <code>feed.children.length</code> instead works until the day
+    something else adds a row.</p>
+  </section>
+  <div id="app">
+    <ul id="feed"></ul>
+    <p><button id="load-more" type="button">Load more</button></p>
+    <p id="feed-status" class="muted">Showing 0 of 12</p>
+  </div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Reload to re-run: edit this file in your editor, save, then press F5 here. Keep the console open (F12) — uncaught errors show up there.</p>
+</aside>
+<script>
+// ─── YOUR CODE ───────────────────────────────
+/* Walkthrough
+   `shown` is a cursor, and it is the only state. Appending a batch is
+   `slice(shown, shown + PAGE)`, and `slice` clamps at the end of the array all by
+   itself — the last page comes back with two items and no bounds check.
+
+   This is the one place where appending rather than clear-and-rerender is right:
+   the earlier posts have not changed, and rebuilding them would throw away scroll
+   position and anything the user had selected. Note that the count still comes from
+   `shown`, not from the DOM. Read `feed.children.length` and you are one filter,
+   one optimistic insert or one loading placeholder away from paging from the wrong
+   offset.
+
+   `paint()` handles the end state in one place: the button is disabled *and*
+   relabelled. Leave it live and the last click does nothing while looking
+   perfectly functional, which reads as a broken page rather than a finished list.
+
+   Swap the click for an `IntersectionObserver` on a sentinel element and every
+   line above stays as it is. That is the point.
+*/
+const POSTS = [
+  'Coffee, then code', 'The build is green', 'Rewrote the parser', 'Found the leak',
+  'Shipped the fix', 'Docs day', 'Deleted 400 lines', 'Renamed everything',
+  'The bug was DNS', 'Wrote a test first', 'Removed the flag', 'Done for today',
+];
+const PAGE = 5;
+
+function setup() {
+  const feed = document.getElementById('feed');
+  const more = document.getElementById('load-more');
+  const status = document.getElementById('feed-status');
+
+  let shown = 0;
+
+  function paint() {
+    status.textContent = 'Showing ' + shown + ' of ' + POSTS.length;
+    const exhausted = shown >= POSTS.length;
+    more.disabled = exhausted;
+    more.textContent = exhausted ? 'No more posts' : 'Load more';
+  }
+
+  function loadBatch() {
+    const batch = POSTS.slice(shown, shown + PAGE);    // slice clamps for you
+    for (let i = 0; i < batch.length; i++) {
+      const post = document.createElement('li');
+      post.className = 'post';
+      post.dataset.index = shown + i;
+      post.textContent = batch[i];
+      feed.append(post);
+    }
+    shown += batch.length;
+    paint();
+  }
+
+  feed.textContent = '';
+  more.addEventListener('click', loadBatch);
+  loadBatch();
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+var __app = document.getElementById('app');
+var __appHTML = __app ? __app.innerHTML : '';
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function reset() { if (__app) __app.innerHTML = __appHTML; }
+function wait(ms) { return new Promise(function (done) { setTimeout(done, ms); }); }
+function ok(value, msg) {
+  if (!value) throw new Error(msg || 'expected a truthy value, got ' + JSON.stringify(value));
+}
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+function fire(el, type, init) {
+  var opts = Object.assign({ bubbles: true, cancelable: true }, init || {});
+  var ev;
+  if (type.indexOf('key') === 0) ev = new KeyboardEvent(type, opts);
+  else if (type === 'input' || type === 'beforeinput') ev = new InputEvent(type, opts);
+  else if (/^(click|dbl|mouse|pointer|contextmenu)/.test(type)) ev = new MouseEvent(type, opts);
+  else ev = new Event(type, opts);
+  el.dispatchEvent(ev);
+  return ev;
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      reset();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '\u2714 ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '\u2610 ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '\u2718 ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed \u00b7 ' + failed + ' failed \u00b7 ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { reset(); if (window.__DEMO) window.__DEMO(); } catch (err) { /* still TODO */ }
+}
+setTimeout(__run, 0);
+
+function posts() {
+  return Array.from(document.querySelectorAll('#feed .post')).map((li) => li.textContent.trim());
+}
+
+function loadMore() {
+  document.getElementById('load-more').click();
+}
+
+function status() {
+  return document.getElementById('feed-status').textContent.trim();
+}
+
+test('the first page is on screen', () => {
+  setup();
+  eq(posts().length, PAGE);
+  eq(posts()[0], POSTS[0]);
+  eq(status(), 'Showing 5 of 12');
+});
+
+test('the button is live while posts remain', () => {
+  setup();
+  eq(document.getElementById('load-more').disabled, false);
+  eq(document.getElementById('load-more').textContent.trim(), 'Load more');
+});
+
+test('one click appends the next page', () => {
+  setup();
+  loadMore();
+  eq(posts().length, 10);
+  eq(posts()[0], POSTS[0], 'the first batch has to stay where it was');
+  eq(posts()[5], POSTS[5]);
+});
+
+test('the status counts what is shown', () => {
+  setup();
+  loadMore();
+  eq(status(), 'Showing 10 of 12');
+});
+
+test('the last page is a short one', () => {
+  setup();
+  loadMore();
+  loadMore();
+  eq(posts().length, POSTS.length);
+  eq(status(), 'Showing 12 of 12');
+});
+
+test('an exhausted button is disabled and says so', () => {
+  setup();
+  loadMore();
+  loadMore();
+  eq(document.getElementById('load-more').disabled, true);
+  eq(document.getElementById('load-more').textContent.trim(), 'No more posts');
+});
+
+test('an exhausted feed cannot grow', () => {
+  setup();
+  loadMore();
+  loadMore();
+  loadMore();
+  loadMore();
+  eq(posts().length, POSTS.length);
+});
+
+test('the posts stay in order', () => {
+  setup();
+  loadMore();
+  loadMore();
+  eq(posts(), POSTS);
+});
+
+test('every post carries its index', () => {
+  setup();
+  loadMore();
+  eq(document.querySelectorAll('#feed .post')[7].dataset.index, '7');
+});
+
+window.__DEMO = function () { setup(); };
+</script>
+</body>
+</html>

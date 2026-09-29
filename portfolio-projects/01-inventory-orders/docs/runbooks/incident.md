@@ -1,0 +1,3 @@
+# Incident: injected receipt failure
+
+Scenario: an exception was injected after the receipt movement write but before line progress update. Expected danger was a movement/balance without matching receipt progress. The SQL transaction rolled back balance, movement, audit, and idempotency together; the original on-hand and zero received quantity remained. Detection is the failed structured request log plus reconciliation. Operator response: retain the correlation ID, inspect command/idempotency state, retry the same key only after confirming process health, and never edit the ledger. Regression evidence is `tests/rollback.test.ts`.

@@ -1,0 +1,3 @@
+import { z } from 'zod';
+const schema=z.object({PORT:z.coerce.number().int().min(1).max(65535).default(4303),DATABASE_PATH:z.string().min(1).default('data/schedule.db'),SLOT_SECRET:z.string().min(16).default('local-demo-secret-change-in-production'),NODE_ENV:z.enum(['development','test','production']).default('development')});
+export function config(env:NodeJS.ProcessEnv=process.env){const parsed=schema.safeParse(env);if(!parsed.success)throw new Error(`Invalid configuration: ${parsed.error.issues.map(i=>i.path.join('.')).join(', ')}`);if(parsed.data.NODE_ENV==='production'&&parsed.data.SLOT_SECRET==='local-demo-secret-change-in-production')throw new Error('SLOT_SECRET must be set in production');return parsed.data;}

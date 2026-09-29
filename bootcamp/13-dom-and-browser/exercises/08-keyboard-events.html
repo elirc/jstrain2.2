@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>08 · keyboard-events</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+h2 { font-size: 17px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #3b82f6;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.prompt ul, .prompt ol { margin: 8px 0 8px 20px; padding: 0; }
+.prompt li { margin: 3px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+#app > :first-child { margin-top: 0; }
+button { font: inherit; padding: 5px 11px; border: 1px solid #c8ccd3; background: #fff;
+  border-radius: 6px; cursor: pointer; }
+button:hover { border-color: #9aa1ab; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input, select, textarea { font: inherit; padding: 5px 8px; border: 1px solid #c8ccd3;
+  border-radius: 6px; }
+ul, ol { padding-left: 20px; }
+li { margin: 2px 0; }
+table { border-collapse: collapse; margin: 4px 0; }
+th, td { border: 1px solid #dfe3e8; padding: 4px 10px; text-align: left; }
+.error { color: #b91c1c; font-size: 13px; margin: 2px 0 8px; min-height: 1em; }
+.muted { color: #8b93a1; }
+.active { background: #1f2937; color: #fff; border-color: #1f2937; }
+/* ── checks panel ─────────────────────────────────────────────── */
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .summary.todo { color: #b45309; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+</style>
+</head>
+<body>
+<main>
+  <h1>08 · Enter submits, Escape clears <small>★★☆ core</small></h1>
+  <p class="meta">concepts: keydown · event.key · event properties · exercises/08-keyboard-events.html</p>
+  <section class="prompt">
+    <p>Listen for <code>keydown</code> on <code>#entry</code> and read the event
+    object:</p>
+    <ul>
+      <li>every key press updates <code>#last-key</code> to
+          <code>key=a shift=false</code> — the real <code>event.key</code> and
+          <code>event.shiftKey</code></li>
+      <li><strong>Enter</strong> (without Shift) with a non-blank value: append
+          <code>&lt;li class="entry"&gt;</code> with the <em>trimmed</em> text to
+          <code>#entries</code>, then empty the box</li>
+      <li><strong>Shift+Enter</strong> adds nothing — that combination means
+          "new line", not "submit"</li>
+      <li><strong>Escape</strong> empties the box and adds nothing</li>
+      <li>blank or whitespace-only + Enter: nothing happens</li>
+    </ul>
+    <p class="hint">hint: <code>event.key</code> is a string — <code>'Enter'</code>,
+    <code>'Escape'</code>, <code>'a'</code>, <code>' '</code>. Not a number, and
+    <code>event.keyCode</code> is dead. Check the modifier flags before you act.</p>
+  </section>
+  <div id="app">
+    <p><input id="entry" placeholder="Type, then press Enter"></p>
+    <ul id="entries"></ul>
+    <p id="last-key" class="muted">key=? shift=false</p>
+  </div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Reload to re-run: edit this file in your editor, save, then press F5 here. Keep the console open (F12) — uncaught errors show up there.</p>
+</aside>
+<script>
+// ─── YOUR CODE ───────────────────────────────
+function setup() {
+  throw new Error('TODO: handle keydown on the entry box');
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+var __app = document.getElementById('app');
+var __appHTML = __app ? __app.innerHTML : '';
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function reset() { if (__app) __app.innerHTML = __appHTML; }
+function wait(ms) { return new Promise(function (done) { setTimeout(done, ms); }); }
+function ok(value, msg) {
+  if (!value) throw new Error(msg || 'expected a truthy value, got ' + JSON.stringify(value));
+}
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+function fire(el, type, init) {
+  var opts = Object.assign({ bubbles: true, cancelable: true }, init || {});
+  var ev;
+  if (type.indexOf('key') === 0) ev = new KeyboardEvent(type, opts);
+  else if (type === 'input' || type === 'beforeinput') ev = new InputEvent(type, opts);
+  else if (/^(click|dbl|mouse|pointer|contextmenu)/.test(type)) ev = new MouseEvent(type, opts);
+  else ev = new Event(type, opts);
+  el.dispatchEvent(ev);
+  return ev;
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      reset();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '\u2714 ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '\u2610 ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '\u2718 ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed \u00b7 ' + failed + ' failed \u00b7 ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { reset(); if (window.__DEMO) window.__DEMO(); } catch (err) { /* still TODO */ }
+}
+setTimeout(__run, 0);
+
+function press(key, init) {
+  const input = document.getElementById('entry');
+  return fire(input, 'keydown', Object.assign({ key: key }, init || {}));
+}
+
+test('reports the key that was pressed', () => {
+  setup();
+  press('a');
+  eq(document.getElementById('last-key').textContent.trim(), 'key=a shift=false');
+});
+
+test('reports the shift flag from the event object', () => {
+  setup();
+  press('A', { shiftKey: true });
+  eq(document.getElementById('last-key').textContent.trim(), 'key=A shift=true');
+});
+
+test('Enter adds the trimmed text as a list item', () => {
+  setup();
+  document.getElementById('entry').value = '  buy milk  ';
+  press('Enter');
+  const items = document.querySelectorAll('#entries li');
+  eq(items.length, 1);
+  eq(items[0].textContent, 'buy milk');
+  ok(items[0].classList.contains('entry'), 'expected the class "entry"');
+});
+
+test('Enter clears the box', () => {
+  setup();
+  document.getElementById('entry').value = 'something';
+  press('Enter');
+  eq(document.getElementById('entry').value, '');
+});
+
+test('Enter on a blank box adds nothing', () => {
+  setup();
+  document.getElementById('entry').value = '   ';
+  press('Enter');
+  eq(document.querySelectorAll('#entries li').length, 0);
+});
+
+test('Shift+Enter does not add an entry', () => {
+  setup();
+  document.getElementById('entry').value = 'not yet';
+  press('Enter', { shiftKey: true });
+  eq(document.querySelectorAll('#entries li').length, 0);
+  eq(document.getElementById('entry').value, 'not yet');
+});
+
+test('Escape clears the box without adding anything', () => {
+  setup();
+  document.getElementById('entry').value = 'never mind';
+  press('Escape');
+  eq(document.getElementById('entry').value, '');
+  eq(document.querySelectorAll('#entries li').length, 0);
+});
+
+test('keeps entries in the order they were added', () => {
+  setup();
+  const input = document.getElementById('entry');
+  input.value = 'one'; press('Enter');
+  input.value = 'two'; press('Enter');
+  input.value = 'three'; press('Enter');
+  const texts = Array.from(document.querySelectorAll('#entries li'))
+    .map((li) => li.textContent);
+  eq(texts, ['one', 'two', 'three']);
+});
+
+window.__DEMO = function () { setup(); };
+</script>
+</body>
+</html>

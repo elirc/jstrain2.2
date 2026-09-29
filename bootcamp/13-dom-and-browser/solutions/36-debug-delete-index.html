@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>36 · debug — delete by index</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #ef4444;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+ul { list-style: none; margin: 0; padding: 0; }
+li { display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 8px; border-bottom: 1px solid #f0f2f5; }
+li button { font: inherit; padding: 2px 9px; border: 1px solid #c8ccd3;
+  background: #fff; border-radius: 6px; cursor: pointer; }
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+</style>
+</head>
+<body>
+<main>
+  <h1>36 · Delete the right row — SOLUTION <small>★★★ debug</small></h1>
+  <p class="meta">concepts: bug hunt · stale index · render vs data · exercises/36-debug-delete-index.html</p>
+  <section class="prompt">
+    <p><b>This page is a bug hunt.</b> A todo list renders items with a
+    Delete button each. Clicking Delete should remove THAT item and
+    re-render the rest. It works if you delete the last row — but delete
+    one from the middle and the wrong item disappears, or a later delete
+    removes the wrong thing.</p>
+    <p>The data lives in <code>items</code> (each has an <code>id</code>
+    and <code>text</code>). <code>render()</code> rebuilds the list.
+    Find the one bug and fix it with the smallest change. Don't rewrite.</p>
+    <p class="hint">hint: one Delete removes the wrong row. Print the
+    index the splice computes before it runs — is it ever <code>-1</code>?
+    What does <code>indexOf</code> return when handed a value that isn't
+    actually in the array, and what does <code>splice</code> do with
+    that?</p>
+  </section>
+  <div id="app"><ul id="list"></ul></div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Bug hunt: red is the starting state. Edit this file, save, press F5. Keep the console open (F12).</p>
+</aside>
+<script>
+// ─── SOLUTION ───────────────
+// Walkthrough — bug class: indexOf on the wrong value. The handler
+// called items.indexOf(item.text) — but items holds OBJECTS, so
+// searching for a string returns -1, and splice(-1, 1) removes the
+// LAST element every time. That's why deleting the last row looked
+// fine and any other row deleted the wrong one. The tell: indexOf
+// whose argument type doesn't match the array's elements, feeding a
+// possibly -1 index straight into splice. Minimal fix: search for the
+// item itself (items.indexOf(item)), or better, delete by identity
+// with findIndex on the id. The wild variant: splice(arr.indexOf(x))
+// where x might be absent — always guard idx !== -1 before splicing.
+var items = [
+  { id: 101, text: 'buy milk' },
+  { id: 102, text: 'walk dog' },
+  { id: 103, text: 'pay rent' },
+];
+
+function render() {
+  var list = document.getElementById('list');
+  list.innerHTML = '';
+  items.forEach(function (item, index) {
+    var li = document.createElement('li');
+    var label = document.createElement('span');
+    label.textContent = item.text;
+    var del = document.createElement('button');
+    del.textContent = 'Delete';
+    del.addEventListener('click', function () {
+      var idx = items.findIndex(function (x) { return x.id === item.id; });
+      if (idx !== -1) items.splice(idx, 1);
+      render();
+    });
+    li.appendChild(label);
+    li.appendChild(del);
+    list.appendChild(li);
+  });
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+function texts() {
+  return Array.prototype.slice
+    .call(document.querySelectorAll('#list li span'))
+    .map(function (s) { return s.textContent; });
+}
+function deleteRow(i) {
+  document.querySelectorAll('#list li button')[i].click();
+}
+function resetData() {
+  items = [
+    { id: 101, text: 'buy milk' },
+    { id: 102, text: 'walk dog' },
+    { id: 103, text: 'pay rent' },
+  ];
+}
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function ok(value, msg) { if (!value) throw new Error(msg || 'expected truthy'); }
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      resetData();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '✔ ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '☐ ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '✘ ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed · ' + failed + ' failed · ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { resetData(); if (window.__DEMO) window.__DEMO(); } catch (err) {}
+}
+setTimeout(__run, 0);
+
+test('renders every item to start', () => {
+  render();
+  eq(texts(), ['buy milk', 'walk dog', 'pay rent']);
+});
+
+test('deleting the last row removes it', () => {
+  render();
+  deleteRow(2);
+  eq(texts(), ['buy milk', 'walk dog']);
+});
+
+test('deleting the MIDDLE row removes that row, not another', () => {
+  render();
+  deleteRow(1);
+  eq(texts(), ['buy milk', 'pay rent']);
+});
+
+test('deleting the first row twice removes the first two in order', () => {
+  render();
+  deleteRow(0);
+  deleteRow(0);
+  eq(texts(), ['pay rent']);
+});
+
+window.__DEMO = function () { render(); };
+</script>
+</body>
+</html>

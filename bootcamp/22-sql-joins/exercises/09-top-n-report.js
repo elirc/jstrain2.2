@@ -1,0 +1,170 @@
+// ─────────────────────────────────────────────────────────────────────────
+//  09 · top-N reports — join, group, order, limit                ★★☆ core
+//  concepts: GROUP BY + ORDER BY + LIMIT · ranking · tiebreakers
+//  run: node 09-top-n-report.js
+// ─────────────────────────────────────────────────────────────────────────
+//
+//  "Best customers" and "best sellers" are the same query with different
+//  tables under it: join, group, order by the aggregate, limit.
+//
+//    · topCustomers(db, limit)  → [{ customer, orders, revenue }]
+//                                 richest first, ties broken by name
+//    · topProducts(db, limit)   → [{ product, units, revenue }]
+//                                 by revenue, ties broken by name
+//
+//      topCustomers(db, 3)  → Margaret 49500, Grace 45800, Linus 28600
+//      topProducts(db, 1)   → the monitor: 4 sold, 79600 in revenue
+//
+//  `units` is the total quantity sold; `revenue` is `SUM(qty * price)`.
+//
+//  hint: ORDER BY can name an alias you defined in SELECT. Always give it a
+//  unique second column to break ties, or the order is the planner's whim.
+
+import { test, eq, ok } from '../../_lib/check.js';
+import { DatabaseSync } from 'node:sqlite';
+
+// ── provided: the same little shop in every file of this module ──────────
+//   8 customers · 6 products · 12 orders · 20 line items
+//   money is in CENTS (integers — floats and money do not mix)
+//   Edsger and Katherine have never ordered; nobody ever bought the
+//   laptop stand. Those three gaps are what the joins are for.
+const SCHEMA = `
+  CREATE TABLE customers (
+    id   INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    city TEXT NOT NULL
+  );
+  CREATE TABLE products (
+    id    INTEGER PRIMARY KEY,
+    name  TEXT NOT NULL,
+    price INTEGER NOT NULL
+  );
+  CREATE TABLE orders (
+    id          INTEGER PRIMARY KEY,
+    customer_id INTEGER NOT NULL REFERENCES customers(id),
+    placed_on   TEXT    NOT NULL,
+    total_cents INTEGER NOT NULL
+  );
+  CREATE TABLE order_items (
+    id         INTEGER PRIMARY KEY,
+    order_id   INTEGER NOT NULL REFERENCES orders(id),
+    product_id INTEGER NOT NULL REFERENCES products(id),
+    qty        INTEGER NOT NULL
+  );
+`;
+
+const CUSTOMERS = [
+  // id, name, city
+  [1, 'Ada', 'London'],        [2, 'Grace', 'New York'],
+  [3, 'Linus', 'Helsinki'],    [4, 'Margaret', 'Boston'],
+  [5, 'Alan', 'London'],       [6, 'Barbara', 'New York'],
+  [7, 'Edsger', 'Amsterdam'],  [8, 'Katherine', 'Hampton'],
+];
+const PRODUCTS = [
+  // id, name, price
+  [1, 'keyboard', 7200],  [2, 'mouse', 2500],
+  [3, 'monitor', 19900],  [4, 'desk mat', 1500],
+  [5, 'usb hub', 4500],   [6, 'laptop stand', 6000],
+];
+const ORDERS = [
+  // id, customer_id, placed_on, total_cents
+  [1, 1, '2024-01-05', 12200],  [2, 2, '2024-01-17', 19900],
+  [3, 1, '2024-02-02', 7000],   [4, 3, '2024-02-14', 14200],
+  [5, 4, '2024-02-28', 47000],  [6, 2, '2024-03-03', 1500],
+  [7, 5, '2024-03-11', 9700],   [8, 1, '2024-03-22', 9000],
+  [9, 6, '2024-04-02', 5500],   [10, 2, '2024-04-14', 24400],
+  [11, 3, '2024-04-25', 14400], [12, 4, '2024-05-06', 2500],
+];
+const ITEMS = [
+  // id, order_id, product_id, qty
+  [1, 1, 1, 1],   [2, 1, 2, 2],   [3, 2, 3, 1],   [4, 3, 2, 1],
+  [5, 3, 4, 3],   [6, 4, 1, 1],   [7, 4, 2, 1],   [8, 4, 5, 1],
+  [9, 5, 3, 2],   [10, 5, 1, 1],  [11, 6, 4, 1],  [12, 7, 1, 1],
+  [13, 7, 2, 1],  [14, 8, 5, 2],  [15, 9, 2, 1],  [16, 9, 4, 2],
+  [17, 10, 3, 1], [18, 10, 5, 1], [19, 11, 1, 2], [20, 12, 2, 1],
+];
+
+// Open the shop, run your test body, always close it.
+function withShop(run) {
+  const db = new DatabaseSync(':memory:');
+  db.exec(SCHEMA);
+  const load = (sql, rows) => {
+    const stmt = db.prepare(sql);
+    for (const row of rows) stmt.run(...row);
+  };
+  load('INSERT INTO customers   VALUES (?, ?, ?)', CUSTOMERS);
+  load('INSERT INTO products    VALUES (?, ?, ?)', PRODUCTS);
+  load('INSERT INTO orders      VALUES (?, ?, ?, ?)', ORDERS);
+  load('INSERT INTO order_items VALUES (?, ?, ?, ?)', ITEMS);
+  try {
+    return run(db);
+  } finally {
+    db.close();
+  }
+}
+
+export function topCustomers(db, limit) {
+  throw new Error('TODO');
+}
+
+export function topProducts(db, limit) {
+  throw new Error('TODO');
+}
+
+// ──────────────────────────── tests ──────────────────────────────────────
+
+test('the three best customers, richest first', () => {
+  withShop((db) => {
+    eq(topCustomers(db, 3), [
+      { customer: 'Margaret', orders: 2, revenue: 49500 },
+      { customer: 'Grace', orders: 3, revenue: 45800 },
+      { customer: 'Linus', orders: 2, revenue: 28600 },
+    ]);
+  });
+});
+
+test('the limit is honoured at both ends', () => {
+  withShop((db) => {
+    eq(topCustomers(db, 0), []);
+    eq(topCustomers(db, 1).length, 1);
+    eq(topCustomers(db, 99).length, 6, 'only six customers ever ordered');
+  });
+});
+
+test('the best seller by revenue is the monitor', () => {
+  withShop((db) => {
+    eq(topProducts(db, 1), [
+      { product: 'monitor', units: 4, revenue: 79600 },
+    ]);
+  });
+});
+
+test('most units sold is not most revenue', () => {
+  withShop((db) => {
+    const all = topProducts(db, 99);
+    const byUnits = [...all].sort((a, b) => b.units - a.units);
+    eq(byUnits[0].product, 'mouse', 'seven mice, more than anything else');
+    eq(all[3].product, 'mouse', 'and still only fourth by revenue');
+  });
+});
+
+test('a product nobody ever bought is not in the ranking at all', () => {
+  withShop((db) => {
+    const names = topProducts(db, 99).map((r) => r.product);
+    eq(names.length, 5);
+    ok(!names.includes('laptop stand'), 'an inner join has nothing to say');
+  });
+});
+
+test('ties are broken by name, so the ranking is stable', () => {
+  withShop((db) => {
+    // this makes Barbara tie Alan at exactly 9700
+    db.exec("INSERT INTO orders VALUES (13, 6, '2024-06-01', 4200)");
+    const tail = topCustomers(db, 99).slice(4);
+    eq(
+      tail.map((r) => r.customer),
+      ['Alan', 'Barbara']
+    );
+    eq(tail[0].revenue, tail[1].revenue);
+  });
+});

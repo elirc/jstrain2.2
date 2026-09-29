@@ -1,0 +1,10 @@
+{
+  "name": "tsbootcamp",
+  "private": true,
+  "type": "module",
+  "description": "TypeScript track. Run one exercise: node ../run.js exercises/<file>.ts (from a module dir).",
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "5.9"
+  }
+}

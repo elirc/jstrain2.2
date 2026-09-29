@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>07 · input-mirror</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+h2 { font-size: 17px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #3b82f6;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.prompt ul, .prompt ol { margin: 8px 0 8px 20px; padding: 0; }
+.prompt li { margin: 3px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+#app > :first-child { margin-top: 0; }
+button { font: inherit; padding: 5px 11px; border: 1px solid #c8ccd3; background: #fff;
+  border-radius: 6px; cursor: pointer; }
+button:hover { border-color: #9aa1ab; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input, select, textarea { font: inherit; padding: 5px 8px; border: 1px solid #c8ccd3;
+  border-radius: 6px; }
+ul, ol { padding-left: 20px; }
+li { margin: 2px 0; }
+table { border-collapse: collapse; margin: 4px 0; }
+th, td { border: 1px solid #dfe3e8; padding: 4px 10px; text-align: left; }
+.error { color: #b91c1c; font-size: 13px; margin: 2px 0 8px; min-height: 1em; }
+.muted { color: #8b93a1; }
+.active { background: #1f2937; color: #fff; border-color: #1f2937; }
+/* ── checks panel ─────────────────────────────────────────────── */
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .summary.todo { color: #b45309; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+#counter.warn { color: #b45309; font-weight: 600; }
+#preview { min-height: 1.4em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>07 · Live mirror and counter <small>★☆☆ warm-up</small></h1>
+  <p class="meta">concepts: input event · live preview · attributes · exercises/07-input-mirror.html</p>
+  <section class="prompt">
+    <p>Wire the <code>input</code> event on <code>#bio</code> so that, on every
+    keystroke:</p>
+    <ul>
+      <li><code>#preview</code> shows what was typed — or the words
+          <code>Nothing typed yet</code> when the box is empty</li>
+      <li><code>#counter</code> shows <code>12 / 60</code> — characters typed, then
+          the limit</li>
+      <li>the limit is read from the input's <code>maxlength</code> attribute, not
+          typed into your code</li>
+      <li><code>#counter</code> gets the class <code>warn</code> when 10 or fewer
+          characters remain, and loses it again</li>
+    </ul>
+    <p><code>setup()</code> paints that starting state immediately — an empty box
+    should already read <code>0 / 60</code>.</p>
+    <p class="hint">hint: <code>input</code> fires on every change including paste
+    and delete; <code>keyup</code> misses paste-by-mouse. Read the limit with
+    <code>Number(input.getAttribute('maxlength'))</code>.</p>
+  </section>
+  <div id="app">
+    <p><label>Bio <input id="bio" maxlength="60" placeholder="Say something"></label></p>
+    <p id="preview" class="muted">Nothing typed yet</p>
+    <p id="counter">0 / 60</p>
+  </div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Reload to re-run: edit this file in your editor, save, then press F5 here. Keep the console open (F12) — uncaught errors show up there.</p>
+</aside>
+<script>
+// ─── YOUR CODE ───────────────────────────────
+function setup() {
+  throw new Error('TODO: mirror the input and count the characters');
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+var __app = document.getElementById('app');
+var __appHTML = __app ? __app.innerHTML : '';
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function reset() { if (__app) __app.innerHTML = __appHTML; }
+function wait(ms) { return new Promise(function (done) { setTimeout(done, ms); }); }
+function ok(value, msg) {
+  if (!value) throw new Error(msg || 'expected a truthy value, got ' + JSON.stringify(value));
+}
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+function fire(el, type, init) {
+  var opts = Object.assign({ bubbles: true, cancelable: true }, init || {});
+  var ev;
+  if (type.indexOf('key') === 0) ev = new KeyboardEvent(type, opts);
+  else if (type === 'input' || type === 'beforeinput') ev = new InputEvent(type, opts);
+  else if (/^(click|dbl|mouse|pointer|contextmenu)/.test(type)) ev = new MouseEvent(type, opts);
+  else ev = new Event(type, opts);
+  el.dispatchEvent(ev);
+  return ev;
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      reset();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '\u2714 ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '\u2610 ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '\u2718 ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed \u00b7 ' + failed + ' failed \u00b7 ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { reset(); if (window.__DEMO) window.__DEMO(); } catch (err) { /* still TODO */ }
+}
+setTimeout(__run, 0);
+
+function type(value) {
+  const input = document.getElementById('bio');
+  input.value = value;
+  fire(input, 'input');
+}
+
+test('starts with the placeholder line and 0 / 60', () => {
+  setup();
+  eq(document.getElementById('preview').textContent.trim(), 'Nothing typed yet');
+  eq(document.getElementById('counter').textContent.trim(), '0 / 60');
+});
+
+test('mirrors what you type', () => {
+  setup();
+  type('hello there');
+  eq(document.getElementById('preview').textContent, 'hello there');
+});
+
+test('counts the characters', () => {
+  setup();
+  type('hello');
+  eq(document.getElementById('counter').textContent.trim(), '5 / 60');
+});
+
+test('reads the limit from the maxlength attribute', () => {
+  document.getElementById('bio').maxLength = 20;
+  setup();
+  eq(document.getElementById('counter').textContent.trim(), '0 / 20');
+});
+
+test('going back to empty restores the placeholder line', () => {
+  setup();
+  type('something');
+  type('');
+  eq(document.getElementById('preview').textContent.trim(), 'Nothing typed yet');
+});
+
+test('warns when 10 or fewer characters are left', () => {
+  setup();
+  type('x'.repeat(52));
+  ok(document.getElementById('counter').classList.contains('warn'),
+    'expected the counter to warn at 52 / 60');
+});
+
+test('stops warning once you delete back down', () => {
+  setup();
+  type('x'.repeat(52));
+  type('x'.repeat(10));
+  eq(document.getElementById('counter').classList.contains('warn'), false);
+});
+
+test('mirrors markup as plain text', () => {
+  setup();
+  type('<b>hi</b>');
+  eq(document.querySelectorAll('#preview b').length, 0);
+  eq(document.getElementById('preview').textContent, '<b>hi</b>');
+});
+
+window.__DEMO = function () { setup(); };
+</script>
+</body>
+</html>

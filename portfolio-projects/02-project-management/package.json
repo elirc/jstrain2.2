@@ -1,0 +1,58 @@
+{
+  "name": "portfolio-project-management",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:api\" \"npm:dev:web\" \"npm:dev:worker\"",
+    "dev:api": "tsx watch apps/api/src/main.ts",
+    "dev:web": "vite --config apps/web/vite.config.ts",
+    "dev:worker": "tsx watch apps/worker/src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/domain.test.ts tests/web.test.tsx",
+    "test:react": "vitest run tests/web.test.tsx tests/cache-isolation.test.tsx",
+    "test:integration": "vitest run tests/api.integration.test.ts tests/worker.integration.test.ts",
+    "test:concurrency": "vitest run tests/concurrency.test.ts tests/cache-isolation.test.tsx",
+    "test:e2e": "vitest run tests/smoke.test.ts",
+    "migrate": "tsx apps/api/src/cli.ts migrate",
+    "seed": "tsx apps/api/src/cli.ts seed",
+    "db:reset": "tsx apps/api/src/cli.ts reset",
+    "build": "npm run build --workspace @pm/web && tsc -p tsconfig.build.json",
+    "start": "node dist/apps/api/src/main.js",
+    "start:worker": "node dist/apps/worker/src/main.js",
+    "smoke": "tsx scripts/smoke.ts",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build",
+    "audit:deps": "npm audit --omit=dev --audit-level=high"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-router-dom": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@eslint/js": "latest",
+    "@testing-library/jest-dom": "latest",
+    "@testing-library/react": "latest",
+    "@testing-library/user-event": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "concurrently": "latest",
+    "eslint": "latest",
+    "globals": "latest",
+    "jsdom": "^26.1.0",
+    "tsx": "latest",
+    "typescript": "latest",
+    "typescript-eslint": "latest",
+    "vite": "latest",
+    "vitest": "latest"
+  }
+}

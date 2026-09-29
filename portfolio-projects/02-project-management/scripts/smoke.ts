@@ -1,0 +1,1 @@
+import{config}from'../apps/api/src/config.js';const response=await fetch(`http://127.0.0.1:${config().PORT}/health/ready`);if(!response.ok)throw new Error(`Readiness failed: ${response.status}`);console.log(await response.text());

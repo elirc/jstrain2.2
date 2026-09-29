@@ -1,0 +1,15 @@
+import { z } from 'zod';
+export const id=z.string().min(1).max(80);
+export const pageQuery=z.object({q:z.string().max(100).default(''),sort:z.enum(['name','sku','available','created_at']).default('name'),direction:z.enum(['asc','desc']).default('asc'),limit:z.coerce.number().int().min(1).max(100).default(25),offset:z.coerce.number().int().min(0).max(10000).default(0)});
+export const productInput=z.object({sku:z.string().trim().min(1).max(40).transform(v=>v.toUpperCase()),name:z.string().trim().min(1).max(120),unit:z.string().trim().min(1).max(20).default('each'),reorderThreshold:z.number().int().min(0).max(1_000_000).default(0)}).strict();
+export const warehouseInput=z.object({code:z.string().trim().min(1).max(20).transform(v=>v.toUpperCase()),name:z.string().trim().min(1).max(120)}).strict();
+export const supplierInput=z.object({name:z.string().trim().min(1).max(120),email:z.string().email(),leadDays:z.number().int().min(0).max(365).default(0)}).strict();
+export const line=z.object({productId:id,quantity:z.number().int().positive(),unitCostCents:z.number().int().min(0).optional(),unitPriceCents:z.number().int().min(0).optional()}).strict();
+export const purchaseInput=z.object({supplierId:id,warehouseId:id,lines:z.array(line).min(1).max(100)}).strict();
+export const salesInput=z.object({warehouseId:id,customerName:z.string().trim().min(1).max(120),lines:z.array(line).min(1).max(100)}).strict();
+export const quantityCommand=z.object({quantity:z.number().int().positive(),productId:id,warehouseId:id,reason:z.string().trim().min(3).max(300).optional()}).strict();
+export const adjustmentInput=z.object({quantity:z.number().int().min(-1_000_000).max(1_000_000).refine(v=>v!==0,'Quantity cannot be zero'),productId:id,warehouseId:id,reason:z.string().trim().min(3).max(300)}).strict();
+export const transferInput=z.object({productId:id,sourceWarehouseId:id,destinationWarehouseId:id,quantity:z.number().int().positive()}).strict().refine(v=>v.sourceWarehouseId!==v.destinationWarehouseId,{message:'Warehouses must differ'});
+export const returnInput=z.object({shipmentId:id,productId:id,quantity:z.number().int().positive(),disposition:z.enum(['restock','quarantine','discard'])}).strict();
+export const configSchema=z.object({PORT:z.coerce.number().int().min(1).max(65535).default(4011),DATABASE_PATH:z.string().min(1).default('./data/inventory.db'),SESSION_SECRET:z.string().min(16).default('local-demo-secret-change-me-1234'),LOG_LEVEL:z.enum(['debug','info','warn','error']).default('info'),WORKER_POLL_MS:z.coerce.number().int().min(50).max(60000).default(2000)});
+export type ProductInput=z.infer<typeof productInput>;

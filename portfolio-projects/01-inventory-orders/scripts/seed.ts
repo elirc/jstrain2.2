@@ -1,0 +1,1 @@
+import{configSchema}from'../packages/contracts/src/index.js';import{openDb,migrate,seed}from'../apps/api/src/db.js';const c=configSchema.parse(process.env),db=openDb(c.DATABASE_PATH);migrate(db);seed(db);db.close();console.log(`Seeded ${c.DATABASE_PATH}`);

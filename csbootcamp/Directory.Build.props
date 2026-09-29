@@ -1,0 +1,20 @@
+<Project>
+  <!--
+    Applies to every file-based exercise in the track.
+
+    File-based apps (dotnet run foo.cs) default to AOT/trim-friendly analysis,
+    which is wrong for a teaching repo: it emits IL2026/IL3050/RDG warnings on
+    every ASP.NET endpoint, and it flips runtime feature switches that make
+    System.Text.Json and EF Core fail at runtime with confusing errors.
+
+    Setting them here once keeps the exercise headers down to the directives
+    that actually teach something.
+  -->
+  <PropertyGroup>
+    <PublishAot>false</PublishAot>
+    <IsAotCompatible>false</IsAotCompatible>
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <EnableRequestDelegateGenerator>false</EnableRequestDelegateGenerator>
+    <NoWarn>$(NoWarn);IL2026;IL3050;RDG004</NoWarn>
+  </PropertyGroup>
+</Project>

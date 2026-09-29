@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>37 · debug — the comment that ran — SOLUTION</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #ef4444;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+ul { list-style: none; margin: 0; padding: 0; }
+li { display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 8px; border-bottom: 1px solid #f0f2f5; }
+li button { font: inherit; padding: 2px 9px; border: 1px solid #c8ccd3;
+  background: #fff; border-radius: 6px; cursor: pointer; }
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+</style>
+</head>
+<body>
+<main>
+  <h1>37 · The comment that ran — SOLUTION <small>&#9733;&#9733;&#9733; debug</small></h1>
+  <p class="meta">concepts: bug hunt &middot; XSS &middot; textContent vs innerHTML &middot; solutions/37-debug-escaping.html</p>
+  <section class="prompt">
+    <p><b>Walkthrough.</b> Vulnerability: stored XSS, by way of the
+    oldest DOM mix-up there is. <code>innerHTML = text</code> hands the
+    string to the HTML parser: angle brackets become tags, attributes
+    become attributes, and <code>onerror</code> becomes code the browser
+    runs — no <code>&lt;script&gt;</code> tag required, which is why
+    filtering for the word "script" catches nothing.</p>
+    <p>The fix is one property: <code>body.textContent = comment.text</code>.
+    <code>textContent</code> sets a text node. There is no parser in the
+    path, so there is no markup to inject, and the escaping is exact and
+    free — an entity a visitor typed stays the characters they typed.</p>
+    <p>The tell: assigning a value you did not author to
+    <code>innerHTML</code>, <code>outerHTML</code>,
+    <code>insertAdjacentHTML</code>, <code>document.write</code>, or a
+    framework's "dangerously set HTML" escape hatch. Reach for
+    <code>textContent</code> by default and treat every use of the
+    others as a line that needs a reason.</p>
+    <p class="hint">Stored, not reflected: the payload lives in the
+    comments store and fires for every later reader, including the
+    admin viewing the moderation queue with their session cookie
+    loaded. If comments really must allow formatting, parse a small
+    markup language yourself and BUILD the elements — never pass the
+    visitor's string to the parser. Related: <code>bootcamp/26-security-hunts/02-html-escaping.js</code>,
+    the server-side half of the same bug.</p>
+  </section>
+  <div id="app"><ul id="list"></ul></div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Bug hunt: red is the starting state. Edit this file, save, press F5. Keep the console open (F12).</p>
+</aside>
+<script>
+// ─── CODE UNDER TEST (it runs, and it's wrong) ───────────────
+var comments = [
+  { id: 1, author: 'ada', text: 'first!' },
+  { id: 2, author: 'grace', text: 'nice write-up' },
+];
+
+function addComment(author, text) {
+  comments.push({ id: comments.length + 1, author: author, text: text });
+  render();
+}
+
+function render() {
+  var list = document.getElementById('list');
+  list.innerHTML = '';
+  comments.forEach(function (comment) {
+    var li = document.createElement('li');
+    var who = document.createElement('b');
+    who.textContent = comment.author;
+    var body = document.createElement('span');
+    body.className = 'body';
+    body.textContent = comment.text; // show what they wrote, as text
+    li.appendChild(who);
+    li.appendChild(body);
+    list.appendChild(li);
+  });
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+function bodies() {
+  return Array.prototype.slice
+    .call(document.querySelectorAll('#list li span.body'))
+    .map(function (s) { return s.textContent; });
+}
+function resetData() {
+  comments = [
+    { id: 1, author: 'ada', text: 'first!' },
+    { id: 2, author: 'grace', text: 'nice write-up' },
+  ];
+}
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function ok(value, msg) { if (!value) throw new Error(msg || 'expected truthy'); }
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      resetData();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '✔ ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '☐ ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '✘ ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed · ' + failed + ' failed · ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { resetData(); if (window.__DEMO) window.__DEMO(); } catch (err) {}
+}
+setTimeout(__run, 0);
+
+test('renders the comments it starts with', () => {
+  render();
+  eq(bodies(), ['first!', 'nice write-up']);
+});
+
+test('a new comment is appended', () => {
+  render();
+  addComment('linus', 'shipped');
+  eq(bodies(), ['first!', 'nice write-up', 'shipped']);
+});
+
+test('markup a visitor typed is shown, not applied', () => {
+  render();
+  addComment('mallory', '<b>SHOUTING</b>');
+  eq(bodies()[2], '<b>SHOUTING</b>', 'the tags were parsed instead of printed');
+  ok(document.querySelectorAll('#list li span.body b').length === 0,
+    'the comment created an element inside the page');
+});
+
+test('a script payload creates no element and no handler', () => {
+  render();
+  addComment('mallory', '<img src=x onerror="window.__PWNED = true">');
+  ok(document.querySelectorAll('#list img').length === 0,
+    'the payload became a real <img> tag in the document');
+  ok(!window.__PWNED, 'the payload executed');
+});
+
+test('an HTML entity is shown as typed, not decoded', () => {
+  render();
+  addComment('ada', 'is 5 &lt; 6?');
+  eq(bodies()[2], 'is 5 &lt; 6?');
+});
+
+window.__DEMO = function () { render(); };
+</script>
+</body>
+</html>

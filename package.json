@@ -1,0 +1,13 @@
+{
+  "name": "js-bootcamp",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Offline personal JS bootcamp — zero-dependency, test-graded exercises. See FLIGHTPLAN.md.",
+  "scripts": {
+    "progress": "node bootcamp/progress.js",
+    "verify": "node bootcamp/verify.js",
+    "ts:progress": "node tsbootcamp/progress.js",
+    "ts:verify": "node tsbootcamp/verify.js",
+    "ts:watch": "node tsbootcamp/node_modules/typescript/lib/tsc.js --watch --noEmit -p tsbootcamp"
+  }
+}

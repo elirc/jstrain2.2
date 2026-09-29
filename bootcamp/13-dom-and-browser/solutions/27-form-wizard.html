@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>27 · form-wizard — SOLUTION</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; padding: 24px; display: flex; align-items: flex-start; gap: 24px;
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1c2024; background: #f6f7f9; }
+main { flex: 1 1 auto; max-width: 760px; }
+h1 { font-size: 22px; margin: 0 0 2px; }
+h1 small { font-weight: 400; color: #6b7280; font-size: 14px; margin-left: 8px; }
+h2 { font-size: 17px; }
+.meta { margin: 0 0 14px; font-size: 12px; color: #8b93a1; }
+.prompt { background: #fff; border: 1px solid #e3e6ea; border-left: 4px solid #3b82f6;
+  border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; }
+.prompt p { margin: 8px 0; }
+.prompt ul, .prompt ol { margin: 8px 0 8px 20px; padding: 0; }
+.prompt li { margin: 3px 0; }
+.hint { color: #6b7280; font-size: 13px; }
+code { background: #eef1f5; border-radius: 4px; padding: 1px 5px;
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 13px; }
+#app { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px; }
+#app > :first-child { margin-top: 0; }
+button { font: inherit; padding: 5px 11px; border: 1px solid #c8ccd3; background: #fff;
+  border-radius: 6px; cursor: pointer; }
+button:hover { border-color: #9aa1ab; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+input, select, textarea { font: inherit; padding: 5px 8px; border: 1px solid #c8ccd3;
+  border-radius: 6px; }
+ul, ol { padding-left: 20px; }
+li { margin: 2px 0; }
+table { border-collapse: collapse; margin: 4px 0; }
+th, td { border: 1px solid #dfe3e8; padding: 4px 10px; text-align: left; }
+.error { color: #b91c1c; font-size: 13px; margin: 2px 0 8px; min-height: 1em; }
+.muted { color: #8b93a1; }
+.active { background: #1f2937; color: #fff; border-color: #1f2937; }
+/* ── checks panel ─────────────────────────────────────────────── */
+#checks { position: sticky; top: 24px; flex: 0 0 330px; background: #fff;
+  border: 1px solid #e3e6ea; border-radius: 8px; padding: 12px 14px;
+  max-height: calc(100vh - 48px); overflow: auto; }
+#checks h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: #6b7280; margin: 0 0 8px; }
+#checks .row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #f0f2f5;
+  word-break: break-word; }
+#checks .row.pass { color: #15803d; }
+#checks .row.fail { color: #b91c1c; }
+#checks .row.todo { color: #b45309; }
+#checks .summary { margin: 10px 0 0; font-weight: 600; font-size: 13px; }
+#checks .summary.pass { color: #15803d; }
+#checks .summary.fail { color: #b91c1c; }
+#checks .summary.todo { color: #b45309; }
+#checks .note { margin: 10px 0 0; padding-top: 8px; border-top: 1px solid #f0f2f5;
+  font-size: 12px; color: #6b7280; }
+#wizard .step { border: 1px solid #e3e6ea; border-radius: 8px; padding: 10px 14px;
+  margin: 0 0 12px; }
+#wizard legend { font-size: 13px; color: #6b7280; padding: 0 4px; }
+#wizard input { width: 260px; }
+#step-label { font-size: 13px; margin: 0 0 10px; }
+#summary { font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>27 · A form in three steps — SOLUTION <small>★★★ stretch</small></h1>
+  <p class="meta">concepts: step state · per-step validation · preventDefault · solutions/27-form-wizard.html</p>
+  <section class="prompt">
+    <p>Three steps, one form, and no way to reach step 3 with rubbish in step 1.</p>
+    <ul>
+      <li>one <code>.step</code> fieldset is visible at a time;
+          <code>#step-label</code> reads <code>Step 2 of 3</code></li>
+      <li><strong>Next</strong> validates the step it is leaving. Step 1 needs a
+          non-blank name, step 2 needs an address containing <code>@</code>.
+          A failure writes into <code>#err-name</code> / <code>#err-email</code>
+          and goes nowhere; success clears the message and advances</li>
+      <li><strong>Back</strong> never validates, and is disabled on step 1.
+          Values stay put when you move around</li>
+      <li>step 3 shows <code>name · email</code> in <code>#summary</code>, hides
+          Next and shows Finish</li>
+      <li>Finish submits: <code>preventDefault()</code>, then <code>Sent</code> in
+          <code>#w-done</code></li>
+    </ul>
+    <p class="hint">hint: the state is one number. <code>render()</code> decides
+    what is hidden, what is disabled, and what the summary says — recompute the
+    summary every render and going back to fix a typo just works. Note that a
+    <code>&lt;button&gt;</code> in a form is a <em>submit</em> button unless you
+    write <code>type="button"</code>, which is why Next and Back say so.</p>
+  </section>
+  <div id="app">
+    <form id="wizard" novalidate>
+      <p id="step-label" class="muted">Step 1 of 3</p>
+      <fieldset class="step" data-step="1">
+        <legend>Who are you</legend>
+        <p><input id="w-name" name="name" type="text" placeholder="Full name"></p>
+        <p class="error" id="err-name"></p>
+      </fieldset>
+      <fieldset class="step" data-step="2" hidden>
+        <legend>How do we reach you</legend>
+        <p><input id="w-email" name="email" type="text" placeholder="you@example.com"></p>
+        <p class="error" id="err-email"></p>
+      </fieldset>
+      <fieldset class="step" data-step="3" hidden>
+        <legend>Check and send</legend>
+        <p id="summary"></p>
+      </fieldset>
+      <p>
+        <button id="w-back" type="button" disabled>Back</button>
+        <button id="w-next" type="button">Next</button>
+        <button id="w-finish" type="submit" hidden>Finish</button>
+      </p>
+      <p id="w-done" class="muted"></p>
+    </form>
+  </div>
+</main>
+<aside id="checks">
+  <h2>Checks</h2>
+  <div id="check-results"></div>
+  <p class="note">Reload to re-run: edit this file in your editor, save, then press F5 here. Keep the console open (F12) — uncaught errors show up there.</p>
+</aside>
+<script>
+// ─── YOUR CODE ───────────────────────────────
+/* Walkthrough
+   `step` is the entire state of this component. `render()` reads it and decides
+   five things: which fieldset is visible, the label, whether Back is disabled,
+   which of Next/Finish is showing, and what the summary says. Nothing else in the
+   file touches `hidden` or `disabled`.
+
+   Validation runs only when moving forward, and only for the step being left. Call
+   it from `render()` instead and the user is told their name is required before
+   they have had a chance to type it — the most disliked form behaviour there is.
+
+   Steps are hidden, never removed. Take a fieldset out of the DOM and its values
+   go with it, so Back arrives at an empty form. Recomputing the summary on every
+   render is what makes "go back, fix the typo, come forward" correct for free.
+
+   `preventDefault()` on submit is the difference between a form and a page reload
+   that loses everything. And note the `type="button"` on Next and Back: a bare
+   `<button>` inside a `<form>` defaults to `type="submit"`, so Next would submit
+   the form on step 1 — a bug that only shows up once you wrap the fields in a
+   real `<form>`.
+*/
+const STEPS = 3;
+
+function setup() {
+  const form = document.getElementById('wizard');
+  const fieldsets = Array.from(form.querySelectorAll('.step'));
+  const label = document.getElementById('step-label');
+  const back = document.getElementById('w-back');
+  const next = document.getElementById('w-next');
+  const finish = document.getElementById('w-finish');
+  const summary = document.getElementById('summary');
+  const done = document.getElementById('w-done');
+  const name = document.getElementById('w-name');
+  const email = document.getElementById('w-email');
+
+  let step = 1;
+
+  function validate(which) {
+    if (which === 1) {
+      const valid = name.value.trim() !== '';
+      document.getElementById('err-name').textContent = valid ? '' : 'Name is required';
+      return valid;
+    }
+    if (which === 2) {
+      const valid = email.value.includes('@');
+      document.getElementById('err-email').textContent = valid ? '' : 'Email needs an @';
+      return valid;
+    }
+    return true;
+  }
+
+  function render() {
+    for (const fieldset of fieldsets) {
+      fieldset.hidden = Number(fieldset.dataset.step) !== step;   // hide, never remove
+    }
+    label.textContent = 'Step ' + step + ' of ' + STEPS;
+    back.disabled = step === 1;
+    next.hidden = step === STEPS;
+    finish.hidden = step !== STEPS;
+    summary.textContent = name.value.trim() + ' \u00b7 ' + email.value.trim();
+  }
+
+  next.addEventListener('click', () => {
+    if (!validate(step)) return;                 // validate the step you are leaving
+    step = Math.min(step + 1, STEPS);
+    render();
+  });
+
+  back.addEventListener('click', () => {
+    step = Math.max(step - 1, 1);
+    render();
+  });
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();                      // never let it navigate
+    if (!validate(1)) {
+      step = 1;
+      render();
+      return;
+    }
+    if (!validate(2)) {
+      step = 2;
+      render();
+      return;
+    }
+    done.textContent = 'Sent';
+  });
+
+  render();
+}
+
+// ─── TESTS (do not edit) ──────────────────────
+var __app = document.getElementById('app');
+var __appHTML = __app ? __app.innerHTML : '';
+var __tests = [];
+function test(name, fn) { __tests.push({ name: name, fn: fn }); }
+function reset() { if (__app) __app.innerHTML = __appHTML; }
+function wait(ms) { return new Promise(function (done) { setTimeout(done, ms); }); }
+function ok(value, msg) {
+  if (!value) throw new Error(msg || 'expected a truthy value, got ' + JSON.stringify(value));
+}
+function eq(actual, expected, msg) {
+  var a = JSON.stringify(actual), b = JSON.stringify(expected);
+  if (a !== b) throw new Error((msg ? msg + ' — ' : '') + 'expected ' + b + ' but got ' + a);
+}
+function fire(el, type, init) {
+  var opts = Object.assign({ bubbles: true, cancelable: true }, init || {});
+  var ev;
+  if (type.indexOf('key') === 0) ev = new KeyboardEvent(type, opts);
+  else if (type === 'input' || type === 'beforeinput') ev = new InputEvent(type, opts);
+  else if (/^(click|dbl|mouse|pointer|contextmenu)/.test(type)) ev = new MouseEvent(type, opts);
+  else ev = new Event(type, opts);
+  el.dispatchEvent(ev);
+  return ev;
+}
+async function __run() {
+  var out = document.getElementById('check-results');
+  var passed = 0, failed = 0, todo = 0;
+  for (var i = 0; i < __tests.length; i++) {
+    var row = document.createElement('div');
+    try {
+      reset();
+      await __tests[i].fn();
+      row.className = 'row pass'; row.textContent = '\u2714 ' + __tests[i].name; passed++;
+    } catch (err) {
+      var msg = (err && err.message) || String(err);
+      if (msg.slice(0, 4) === 'TODO') {
+        row.className = 'row todo'; row.textContent = '\u2610 ' + __tests[i].name; todo++;
+      } else {
+        row.className = 'row fail'; row.textContent = '\u2718 ' + __tests[i].name + ' — ' + msg; failed++;
+      }
+    }
+    out.appendChild(row);
+  }
+  var sum = document.createElement('p');
+  sum.className = 'summary ' + (failed ? 'fail' : todo ? 'todo' : 'pass');
+  sum.textContent = passed + ' passed \u00b7 ' + failed + ' failed \u00b7 ' + todo + ' todo';
+  out.appendChild(sum);
+  window.__RESULTS = { passed: passed, failed: failed, todo: todo };
+  console.log('#done passed=' + passed + ' failed=' + failed + ' todo=' + todo);
+  try { reset(); if (window.__DEMO) window.__DEMO(); } catch (err) { /* still TODO */ }
+}
+setTimeout(__run, 0);
+
+function stepBox(n) {
+  return document.querySelector('#wizard .step[data-step="' + n + '"]');
+}
+
+function fillName(value) {
+  document.getElementById('w-name').value = value;
+}
+
+function fillEmail(value) {
+  document.getElementById('w-email').value = value;
+}
+
+function next() {
+  document.getElementById('w-next').click();
+}
+
+function back() {
+  document.getElementById('w-back').click();
+}
+
+function toSummary() {
+  fillName('Ada Lovelace');
+  next();
+  fillEmail('ada@example.com');
+  next();
+}
+
+test('starts on step 1 with Back disabled', () => {
+  setup();
+  eq(stepBox(1).hidden, false);
+  eq(stepBox(2).hidden, true);
+  eq(stepBox(3).hidden, true);
+  eq(document.getElementById('step-label').textContent.trim(), 'Step 1 of 3');
+  eq(document.getElementById('w-back').disabled, true);
+});
+
+test('an empty name does not advance', () => {
+  setup();
+  next();
+  eq(stepBox(1).hidden, false);
+  ok(document.getElementById('err-name').textContent.trim() !== '',
+    'expected a message in #err-name');
+});
+
+test('a name advances and clears the message', () => {
+  setup();
+  fillName('Ada Lovelace');
+  next();
+  eq(stepBox(2).hidden, false);
+  eq(document.getElementById('err-name').textContent.trim(), '');
+  eq(document.getElementById('step-label').textContent.trim(), 'Step 2 of 3');
+  eq(document.getElementById('w-back').disabled, false);
+});
+
+test('an address without an @ does not advance', () => {
+  setup();
+  fillName('Ada Lovelace');
+  next();
+  fillEmail('ada.example.com');
+  next();
+  eq(stepBox(2).hidden, false);
+  ok(document.getElementById('err-email').textContent.trim() !== '',
+    'expected a message in #err-email');
+});
+
+test('a valid address reaches the summary', () => {
+  setup();
+  toSummary();
+  eq(stepBox(3).hidden, false);
+  eq(document.getElementById('step-label').textContent.trim(), 'Step 3 of 3');
+});
+
+test('the summary shows both answers', () => {
+  setup();
+  toSummary();
+  eq(document.getElementById('summary').textContent.trim(),
+    'Ada Lovelace \u00b7 ada@example.com');
+});
+
+test('the last step swaps Next for Finish', () => {
+  setup();
+  toSummary();
+  eq(document.getElementById('w-next').hidden, true);
+  eq(document.getElementById('w-finish').hidden, false);
+});
+
+test('Back keeps what you typed', () => {
+  setup();
+  toSummary();
+  back();
+  eq(stepBox(2).hidden, false);
+  eq(document.getElementById('w-email').value, 'ada@example.com');
+});
+
+test('fixing an answer updates the summary', () => {
+  setup();
+  toSummary();
+  back();
+  back();
+  fillName('Grace Hopper');
+  next();
+  next();
+  eq(document.getElementById('summary').textContent.trim(),
+    'Grace Hopper \u00b7 ada@example.com');
+});
+
+test('Finish reports instead of reloading', () => {
+  setup();
+  toSummary();
+  const event = fire(document.getElementById('wizard'), 'submit');
+  eq(event.defaultPrevented, true, 'expected preventDefault() on submit');
+  eq(document.getElementById('w-done').textContent.trim(), 'Sent');
+});
+
+window.__DEMO = function () { setup(); };
+</script>
+</body>
+</html>
