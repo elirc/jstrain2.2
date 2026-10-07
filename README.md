@@ -23,6 +23,20 @@ node bootcamp/01-language-core/exercises/01-*.js   # run any exercise
 node bootcamp/progress.js                          # your scoreboard
 ```
 
+Use Node 22.13 or newer: modules 19, 22 and 27 use the built-in
+`node:sqlite`, which needs no flag from 22.13 on (checked on 22.16).
+
+**One-time setup for the two tracks that are not zero-dependency.**
+`bootcamp/` needs nothing installed. `tsbootcamp/` grades with the
+TypeScript compiler from `tsbootcamp/node_modules/typescript`, and
+`jstrain/` runs on vitest. `node_modules/` is gitignored, so a fresh clone
+has neither. Run this once while you still have a network:
+
+```bash
+cd tsbootcamp && npm install && cd ..   # typescript 5.9 + @types/node
+cd jstrain && npm install && cd ..      # vitest, React, jsdom
+```
+
 An exercise file looks like this: a prompt in comments, a function that
 throws `TODO`, and tests underneath. You write the code and re-run the
 file until:
@@ -98,7 +112,12 @@ cheatsheets/         ← 15 offline reference sheets (your MDN substitute)
 docs/                ← the map: project overview + learning path
                        (OVERVIEW.md), gaps + roadmap (IMPROVEMENTS.md)
 jstrain/             ← bonus: a second course — 274 problems with
-                       TypeScript + React tracks (vitest, deps installed)
+                       TypeScript + React tracks (vitest; npm install once)
+codexdocs/           ← a separate project-based course (RelayDesk, a
+                       support-ticket system): start at codexdocs/README.md
+portfolio-projects/  ← three standalone TS/Node/React/SQL apps, each with
+                       its own README and lockfile, plus a learning path
+                       (portfolio-projects/learning-path/README.md)
 
 csbootcamp/          ← the C# / .NET track: 29 modules, 147 exercises
   01-12                       the language: types, collections, LINQ,

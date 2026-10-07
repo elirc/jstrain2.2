@@ -10,7 +10,8 @@ open ideas. Companion to [`OVERVIEW.md`](OVERVIEW.md).
 - `bootcamp/24-debug-hunts` grew from 16 to 22: four async hunts
   (`Promise.all` collapse, cleanup-before-await, listener leak,
   concurrency scramble) and two SQL hunts (LEFT-JOIN-turned-inner, join
-  fan-out). The bug-class table is now 20 families.
+  fan-out). The bug-class table is now 20 families (23 after the second
+  pass below — the count in `24-debug-hunts/README.md` today).
 - `bootcamp/25-codebase-debug-hunts` (new) — bugs spread across several
   files: the crash site and the cause sit apart, the way inherited code
   and generated code actually fail. Three hunts (broken cross-file

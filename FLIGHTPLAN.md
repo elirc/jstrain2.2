@@ -1,7 +1,9 @@
 # ✈️ FLIGHTPLAN — 10 hours, no internet, maximum gains
 
-Everything you need is on this laptop. No npm install, no docs lookups —
-`cheatsheets/` is your MDN for the flight.
+Everything you need is on this laptop. This flight's `bootcamp/` modules
+need no npm install and no docs lookups — `cheatsheets/` is your MDN for
+the flight. (Round 2's TypeScript track and `jstrain/` do need a one-time
+`npm install` before take-off; see the README's setup note.)
 
 **You will not finish everything. That is by design.** There are ~890
 exercises across the JS and TypeScript tracks plus a second full course
@@ -101,5 +103,5 @@ low-effort, still compounding:
 - The stretch (★★★) exercises you skipped
 - The lanes you didn't pick, and the remaining capstones
 - `jstrain/` — a second, separate 274-problem course with a TypeScript
-  track and a React track (vitest-graded, deps preinstalled):
-  `cd jstrain && npm test`
+  track and a React track (vitest-graded; run `npm install` in `jstrain/`
+  once, on the ground): `cd jstrain && npm test`

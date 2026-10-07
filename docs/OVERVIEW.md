@@ -4,8 +4,10 @@ This repo is a personal, fully offline coding bootcamp with one goal:
 take a junior developer with shaky fundamentals to **mid-level, ready to
 contribute to a real CRUD web team** — able to pass interviews, read
 unfamiliar code fast, and use AI assistance as a power tool instead of a
-crutch. Everything runs with plain `node <file>`. No installs, no wifi,
-no test runner, no config.
+crutch. Every `bootcamp/` exercise runs with plain `node <file>`. No
+installs, no wifi, no test runner, no config. The two exceptions need one
+`npm install` on a connected machine: `tsbootcamp/` (for the TypeScript
+compiler) and `jstrain/` (for vitest).
 
 ## What's on the shelves
 
@@ -16,7 +18,7 @@ no test runner, no config.
 | `quizzes/` | 15 files, 453 questions | Rapid-fire recall, answers hidden in collapsed blocks. Every "what does this print" answer was produced by running the snippet |
 | `cheatsheets/` | 15 sheets | Your offline MDN: array methods, promises, regex, big-O, Node APIs, TS errors, gotchas, the non-code interview |
 | `guides/` | 8 essays | The long-form *why*: event loop, `this`/prototypes, memory, coercion, HTTP, how Node runs code, working with AI, React bug classes |
-| `jstrain/` | 274 problems | A second, separate course (vitest-graded, deps preinstalled) with TypeScript and React tracks — different reps on the same ideas |
+| `jstrain/` | 274 problems | A second, separate course (vitest-graded, `npm install` once) with TypeScript and React tracks — different reps on the same ideas |
 | `FLIGHTPLAN.md` / `FLIGHTPLAN-NODE-TS.md` | 2 × 10 hours | The curated schedules. Start there |
 | `docs/` | this folder | The map: this overview, and `IMPROVEMENTS.md` — known gaps and the roadmap |
 

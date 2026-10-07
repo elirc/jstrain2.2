@@ -8,6 +8,12 @@ MDN. This plan assumes you've done (most of) the core JS flight.
 Two lanes, five hours each. Swap their order if you'd rather start with
 servers than types.
 
+**Before take-off (needs a network, once):** `cd tsbootcamp && npm install`.
+The grader runs `tsbootcamp/node_modules/typescript/lib/tsc.js`
+(`tsbootcamp/_lib/tsc-config.js`, line 8), and `node_modules/` is not in
+the repo. Without it, every TS exercise fails before a single type is
+checked. Do the same in `jstrain/` if you want its TS track below.
+
 ## How the TypeScript track works
 
 TS exercises are graded TWICE — types by `tsc --strict`, behavior by the
